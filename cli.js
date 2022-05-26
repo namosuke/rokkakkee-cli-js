@@ -14,12 +14,18 @@ const colorA = (str) => `\x1b[32m${str}\x1b[0m`;
 const colorB = (str) => `\x1b[35m${str}\x1b[0m`;
 
 const items = {
-  playerA: colorA("You"),
-  playerB: colorB("CPU"),
-  portalA: colorA("---"),
-  portalB: colorB("---"),
-  turnA: `${colorA("あなた")}のターンです`,
-  turnB: `${colorB("CPU")}のターンです`,
+  players: {
+    playerA: colorA("You"),
+    playerB: colorB("CPU"),
+  },
+  portals: {
+    playerA: colorA("---"),
+    playerB: colorB("---"),
+  },
+  turns: {
+    playerA: `${colorA("あなた")}のターンです`,
+    playerB: `${colorB("CPU")}のターンです`,
+  },
 };
 
 class Cell {
@@ -39,12 +45,8 @@ class Cell {
       playerB: colorB(num),
     };
     let result = stateDict[state] ?? num;
-    if (this.isPlayer) {
-      if (this.state === "playerA") {
-        result = this.game.playerA();
-      } else if (this.state === "playerB") {
-        result = this.game.playerB();
-      }
+    if (this.isPlayer && this.state) {
+      result = this.game.drawPlayer(this.state);
     }
     if (this.isMovable) {
       result = underline(result);
@@ -74,14 +76,20 @@ class Game {
       ],
     ];
     this.cellsMap = {
-      portalA: [this.cells[2][1], this.cells[2][2]],
-      portalB: [this.cells[0][2], this.cells[0][1]],
+      portals: {
+        playerA: [this.cells[2][1], this.cells[2][2]],
+        playerB: [this.cells[0][2], this.cells[0][1]],
+      },
     };
-    this.posA = null;
-    this.posB = null;
+    this.poss = {
+      playerA: null,
+      playerB: null,
+    };
     this.currentSide = "playerA";
-    this.pointA = 0;
-    this.pointB = 0;
+    this.points = {
+      playerA: 0,
+      playerB: 0,
+    };
     this.selectingId = 0;
     this.start();
   }
@@ -113,17 +121,13 @@ class Game {
       } else if (key.name === "space") {
         movable[this.selectingId].state = this.currentSide;
         // 移動時にisPlayerをリセット
-        if (this.posA && this.currentSide === "playerA") {
-          this.cells[this.posA[0]][this.posA[1]].isPlayer = false;
-        } else if (this.posB && this.currentSide === "playerB") {
-          this.cells[this.posB[0]][this.posB[1]].isPlayer = false;
+        if (this.poss[this.currentSide]) {
+          this.cells[this.poss[this.currentSide][0]][
+            this.poss[this.currentSide][1]
+          ].isPlayer = false;
         }
         movable[this.selectingId].isPlayer = true;
-        if (this.currentSide === "playerA") {
-          this.posA = movable[this.selectingId].pos;
-        } else {
-          this.posB = movable[this.selectingId].pos;
-        }
+        this.poss[this.currentSide] = movable[this.selectingId].pos;
         this.turn(this.nextSide(this.currentSide));
       }
       this.draw();
@@ -132,7 +136,9 @@ class Game {
     this.draw();
   }
   static template(portalA, portalB, cells, text, pointA, pointB) {
-    return `${items.playerA}: ${pointA} / ${items.playerB}: ${pointB}
+    return `${items.players.playerA}: ${pointA} / ${
+      items.players.playerB
+    }: ${pointB}
 
       ${thin("(")}${portalB}${thin(")")}
 ${Game.cellsTemplate(cells)}
@@ -165,27 +171,28 @@ ${text}`;
     console.clear();
     console.log(
       Game.template(
-        this.posA === null ? this.playerA() : items.portalA,
-        this.posB === null ? this.playerB() : items.portalB,
+        this.poss.playerA === null
+          ? this.drawPlayer("playerA")
+          : items.portals.playerA,
+        this.poss.playerB === null
+          ? this.drawPlayer("playerB")
+          : items.portals.playerB,
         this.cells.map((row) => row.map((cell) => cell.draw())),
-        this.currentSide === "playerA" ? items.turnA : items.turnB,
-        this.pointA,
-        this.pointB
+        items.turns[this.currentSide],
+        this.points.playerA,
+        this.points.playerB
       )
     );
   }
-  playerA() {
-    return this.currentSide === "playerA" ? bold(items.playerA) : items.playerA;
-  }
-  playerB() {
-    return this.currentSide === "playerB" ? bold(items.playerB) : items.playerB;
+  drawPlayer(side) {
+    return this.currentSide === side
+      ? bold(items.players[side])
+      : items.players[side];
   }
   searchMovable(side) {
-    const pos = side === "playerA" ? this.posA : this.posB;
-    if (this.posA === null && side === "playerA") {
-      return this.cellsMap.portalA;
-    } else if (this.posB === null && side === "playerB") {
-      return this.cellsMap.portalB;
+    const pos = this.poss[side];
+    if (this.poss[side] === null) {
+      return this.cellsMap.portals[side];
     } else {
       const result = [];
       this.cells.forEach((row) =>
