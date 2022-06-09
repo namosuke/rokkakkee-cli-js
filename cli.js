@@ -1,4 +1,18 @@
+const { program, Option } = require("commander");
 const readline = require("readline");
+
+program
+  .version("0.0.1")
+  .addOption(
+    new Option("-m --mode <mode>", "select a game mode", "local").choices([
+      "local",
+      "online",
+      "cpu",
+    ])
+  );
+program.parse();
+const options = program.opts();
+console.log(options);
 
 // これが無いとCtrl+Cで終了できない
 const rl = readline.createInterface({
@@ -215,7 +229,7 @@ ${text}`;
     return side === "playerA" ? "playerB" : "playerA";
   }
   draw() {
-    console.clear();
+    //console.clear();
     console.log(
       Game.template(
         this.poss.playerA === null
