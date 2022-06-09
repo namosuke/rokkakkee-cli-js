@@ -26,6 +26,10 @@ const items = {
     playerA: `${colorA("あなた")}のターンです`,
     playerB: `${colorB("CPU")}のターンです`,
   },
+  winners: {
+    playerA: `${colorA("あなた")}の勝ち！`,
+    playerB: `${colorB("CPU")}の勝ち！`,
+  },
 };
 
 class Cell {
@@ -91,6 +95,9 @@ class Game {
       playerB: 0,
     };
     this.selectingId = 0;
+    this.isGameOver = false;
+    this.winner = null;
+    this.gameEndCellCount = 11;
     this.start();
   }
   start() {
@@ -101,6 +108,9 @@ class Game {
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
     process.stdin.on("keypress", (str, key) => {
+      if (this.isGameOver) {
+        return;
+      }
       const movable = this.searchMovable(this.currentSide);
       if (key.name === "right") {
         if (this.selectingId + 1 >= movable.length) {
@@ -155,6 +165,11 @@ class Game {
       }
       this.points.playerA = this.countPoint("playerA", this.cells);
       this.points.playerB = this.countPoint("playerB", this.cells);
+      if (this.points.playerA + this.points.playerB >= this.gameEndCellCount) {
+        this.isGameOver = true;
+        this.winner =
+          this.points.playerA > this.points.playerB ? "playerA" : "playerB";
+      }
       this.draw();
     });
     this.turn();
@@ -203,7 +218,9 @@ ${text}`;
           ? this.drawPlayer("playerB")
           : items.portals.playerB,
         this.cells.map((row) => row.map((cell) => cell.draw())),
-        items.turns[this.currentSide],
+        this.isGameOver
+          ? items.winners[this.winner]
+          : items.turns[this.currentSide],
         this.points.playerA,
         this.points.playerB
       )
