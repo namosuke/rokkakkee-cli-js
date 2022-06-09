@@ -271,6 +271,43 @@ ${text}`;
           }
         })
       );
+      result.sort((a, b) => {
+        const orders = [0, 0];
+        [a, b].forEach((cell, index) => {
+          const diffY = this.poss[this.currentSide][0] - cell.pos[0];
+          const diffX = this.poss[this.currentSide][1] - cell.pos[1];
+          if (cell.pos[0] % 2 === 0) {
+            if (diffY === -1 && diffX === 0) {
+              orders[index] = 0;
+            } else if (diffY === 0 && diffX === 1) {
+              orders[index] = 1;
+            } else if (diffY === 1 && diffX === 0) {
+              orders[index] = 2;
+            } else if (diffY === 1 && diffX === -1) {
+              orders[index] = 3;
+            } else if (diffY === 0 && diffX === -1) {
+              orders[index] = 4;
+            } else if (diffY === -1 && diffX === -1) {
+              orders[index] = 5;
+            }
+          } else {
+            if (diffY === -1 && diffX === 1) {
+              orders[index] = 0;
+            } else if (diffY === 0 && diffX === 1) {
+              orders[index] = 1;
+            } else if (diffY === 1 && diffX === 1) {
+              orders[index] = 2;
+            } else if (diffY === 1 && diffX === 0) {
+              orders[index] = 3;
+            } else if (diffY === 0 && diffX === -1) {
+              orders[index] = 4;
+            } else if (diffY === -1 && diffX === 0) {
+              orders[index] = 5;
+            }
+          }
+        });
+        return orders[0] - orders[1];
+      });
       return result;
     }
   }
