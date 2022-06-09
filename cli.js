@@ -128,7 +128,7 @@ class Game {
         }
         this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
         movable[this.selectingId].isSelecting = true;
-      } else if (key.name === "space") {
+      } else if (key.name === "up") {
         // 移動先が敵陣かつプレイヤーでないとき
         if (
           movable[this.selectingId].state === this.nextSide(this.currentSide) &&
