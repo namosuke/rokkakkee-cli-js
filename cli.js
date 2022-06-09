@@ -153,6 +153,8 @@ class Game {
         }
         this.turn(this.nextSide(this.currentSide));
       }
+      this.points.playerA = this.countPoint("playerA", this.cells);
+      this.points.playerB = this.countPoint("playerB", this.cells);
       this.draw();
     });
     this.turn();
@@ -259,6 +261,17 @@ ${text}`;
     );
     this.searchMovable(side).map((cell) => (cell.isMovable = true));
     this.searchMovable(side)[this.selectingId].isSelecting = true;
+  }
+  countPoint(side, cells) {
+    let point = 0;
+    cells.forEach((row) => {
+      row.forEach((cell) => {
+        if (cell.state === side) {
+          point += 1;
+        }
+      });
+    });
+    return point;
   }
 }
 
