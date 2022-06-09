@@ -169,6 +169,13 @@ class Game {
         this.isGameOver = true;
         this.winner =
           this.points.playerA > this.points.playerB ? "playerA" : "playerB";
+        this.cells.map((row) =>
+          row.map((cell) => {
+            cell.isMovable = false;
+            cell.isSelecting = false;
+          })
+        );
+        this.currentSide = null;
       }
       this.draw();
     });
