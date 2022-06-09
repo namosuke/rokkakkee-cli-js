@@ -119,15 +119,38 @@ class Game {
         this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
         movable[this.selectingId].isSelecting = true;
       } else if (key.name === "space") {
-        movable[this.selectingId].state = this.currentSide;
-        // 移動時にisPlayerをリセット
-        if (this.poss[this.currentSide]) {
-          this.cells[this.poss[this.currentSide][0]][
-            this.poss[this.currentSide][1]
-          ].isPlayer = false;
+        // 移動先が敵陣かつプレイヤーでないとき
+        if (
+          movable[this.selectingId].state === this.nextSide(this.currentSide) &&
+          this.poss[this.nextSide(this.currentSide)] !==
+            movable[this.selectingId].pos
+        ) {
+          if (movable[this.selectingId].num === 1) {
+            movable[this.selectingId].state = null;
+          }
+          movable[this.selectingId].num -= 1;
+        } else {
+          // もし敵プレイヤーなら
+          if (
+            this.poss[this.nextSide(this.currentSide)] ===
+            movable[this.selectingId].pos
+          ) {
+            this.poss[this.nextSide(this.currentSide)] = null;
+            movable[this.selectingId].num = 0;
+          }
+          movable[this.selectingId].state = this.currentSide;
+          // 移動時にisPlayerをリセット
+          if (this.poss[this.currentSide]) {
+            this.cells[this.poss[this.currentSide][0]][
+              this.poss[this.currentSide][1]
+            ].isPlayer = false;
+            this.cells[this.poss[this.currentSide][0]][
+              this.poss[this.currentSide][1]
+            ].num += 1;
+          }
+          movable[this.selectingId].isPlayer = true;
+          this.poss[this.currentSide] = movable[this.selectingId].pos;
         }
-        movable[this.selectingId].isPlayer = true;
-        this.poss[this.currentSide] = movable[this.selectingId].pos;
         this.turn(this.nextSide(this.currentSide));
       }
       this.draw();
