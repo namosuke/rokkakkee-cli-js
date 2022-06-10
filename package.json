@@ -1,12 +1,13 @@
 {
-  "dependencies": {
-    "commander": "^9.3.0"
-  },
   "name": "rokkakkee-cli",
   "version": "0.0.1",
   "description": "A game named 'rokkakkee' for command line interfaces",
   "main": "cli.js",
   "repository": "https://github.com/namosuke/rokkakkee-cli.git",
   "author": "namosuke",
-  "license": ""
+  "license": "",
+  "dependencies": {
+    "commander": "^9.3.0"
+  },
+  "devDependencies": {}
 }
