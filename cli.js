@@ -229,7 +229,7 @@ ${text}`;
     return side === "playerA" ? "playerB" : "playerA";
   }
   draw() {
-    //console.clear();
+    console.clear();
     console.log(
       Game.template(
         this.poss.playerA === null
