@@ -138,8 +138,8 @@ class Game {
       } else if (key.name === "up") {
         // 移動先が敵陣かつプレイヤーでないとき
         if (
-          moveable[this.selectingId].state === this.nextSide(this.currentSide) &&
-          this.poss[this.nextSide(this.currentSide)] !==
+          moveable[this.selectingId].state === this.nextSide &&
+          this.poss[this.nextSide] !==
             moveable[this.selectingId].pos
         ) {
           if (moveable[this.selectingId].num === 1) {
@@ -149,10 +149,10 @@ class Game {
         } else {
           // もし敵プレイヤーなら
           if (
-            this.poss[this.nextSide(this.currentSide)] ===
+            this.poss[this.nextSide] ===
             moveable[this.selectingId].pos
           ) {
-            this.poss[this.nextSide(this.currentSide)] = null;
+            this.poss[this.nextSide] = null;
             moveable[this.selectingId].num = 0;
           }
           moveable[this.selectingId].state = this.currentSide;
@@ -168,7 +168,7 @@ class Game {
           moveable[this.selectingId].isPlayer = true;
           this.poss[this.currentSide] = moveable[this.selectingId].pos;
         }
-        this.turn(this.nextSide(this.currentSide));
+        this.turn(this.nextSide);
       }
       this.points.playerA = this.countPoint("playerA", this.cells);
       this.points.playerB = this.countPoint("playerB", this.cells);
@@ -217,8 +217,8 @@ ${text}`;
     return text;
   }
 
-  nextSide(side) {
-    return side === "playerA" ? "playerB" : "playerA";
+  get nextSide() {
+    return this.currentSide === "playerA" ? "playerB" : "playerA";
   }
 
   draw() {
