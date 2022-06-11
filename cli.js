@@ -1,3 +1,19 @@
+// Type reference
+// type Formatter = (str: string) => string;
+// type Position = [number, number];
+// type PlayerIdentifier = null | "playerA" | "playerB";
+
+// interface Player {
+//   readonly color: (str: string) => string;
+//   readonly displayedName: string;
+//   readonly portal: string;
+//   readonly turnMessage: string;
+//   readonly winningMessage: string;
+//   readonly portalAdjacentCells: [Cell, Cell];
+//   pos: null | Position;
+//   point: number;
+// }
+
 const readline = require("readline");
 
 // これが無いとCtrl+Cで終了できない
@@ -6,6 +22,7 @@ readline.createInterface({
   output: process.stdout,
 });
 
+// Formatter
 const thin = (str) => `\x1b[2m${str}\x1b[0m`;
 const bold = (str) => `\x1b[1m${str}\x1b[0m`;
 const underline = (str) => `\x1b[4m${str}\x1b[0m`;
@@ -13,7 +30,21 @@ const swap = (str) => `\x1b[7m${str}\x1b[0m`;
 const colorA = (str) => `\x1b[32m${str}\x1b[0m`;
 const colorB = (str) => `\x1b[35m${str}\x1b[0m`;
 
+// (
+//   game: Game,
+//   pos: Position,
+//   num?: number,
+//   state?: PlayerIdentifier,
+// ) => Cell
 class Cell {
+  // readonly game: Game;
+  // readonly pos: Position;
+  // num: number;
+  // state: PlayerIdentifier;
+  // isMoveable: boolean;
+  // isSelecting: boolean;
+  // isPlayer: boolean;
+
   constructor(game, pos, num = 0, state = null) {
     this.game = game;
     this.pos = pos;
@@ -24,6 +55,7 @@ class Cell {
     this.isPlayer = false;
   }
 
+  // () => string
   draw() {
     // マスの値を何桁で表示するかを指定する
     const digitDisplayed = 1;
@@ -46,6 +78,17 @@ class Cell {
 }
 
 class Game {
+  // readonly cells: Cell[][];
+  // players: {
+  //   playerA: Player,
+  //   playerB: Player,
+  // };
+  // currentSide: PlayerIdentifier;
+  // selectingId: number;
+  // isGameOver: boolean;
+  // winner: PlayerIdentifier;
+  // readonly gameEndCellCount: number;
+
   constructor() {
     this.cells = [
       [
@@ -164,8 +207,8 @@ class Game {
         this.turn(this.nextSide);
       }
 
-      this.players.playerA.point = this.countPoint("playerA", this.cells);
-      this.players.playerB.point = this.countPoint("playerB", this.cells);
+      this.players.playerA.point = this.countPoint("playerA");
+      this.players.playerB.point = this.countPoint("playerB");
 
       if (this.players.playerA.point + this.players.playerB.point >= this.gameEndCellCount) {
         this.isGameOver = true;
@@ -185,6 +228,7 @@ class Game {
     this.draw();
   }
 
+  // (cells: string[][]) => string
   static cellsTemplate(cells) {
     let text = "";
     for (let rowIndex = 0; rowIndex < cells.length; rowIndex++) {
@@ -243,12 +287,14 @@ ${Game.cellsTemplate(cells)}
 ${text}`);
   }
 
+  // (side: PlayerIdentifier) => string
   drawPlayer(side) {
     return this.currentSide === side
       ? bold(this.players[side].displayedName)
       : this.players[side].displayedName;
   }
 
+  // (side: PlayerIdentifier) => Cell[]
   searchMoveable(side) {
     const { pos } = this.players[side];
 
@@ -326,6 +372,7 @@ ${text}`);
     return result;
   }
 
+  // (side?: PlayerIdentifier) => void
   turn(side = this.currentSide) {
     this.currentSide = side;
     this.selectingId = 0;
@@ -339,9 +386,10 @@ ${text}`);
     this.searchMoveable(side)[this.selectingId].isSelecting = true;
   }
 
-  countPoint(side, cells) {
+  // (side: PlayerIdentifier) => number
+  countPoint(side) {
     let point = 0;
-    cells.forEach((row) => row.forEach((cell) => {
+    this.cells.forEach((row) => row.forEach((cell) => {
       if (cell.state === side) point += 1;
     }));
     return point;
