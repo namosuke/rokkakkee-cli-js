@@ -41,13 +41,13 @@ class Cell {
     this.isPlayer = false;
   }
 
-  draw(num = this.num, state = this.state) {
-    num = " " + String(num).padStart(1, "0") + " ";
-    const stateDict = {
-      playerA: colorA(num),
-      playerB: colorB(num),
-    };
-    let result = stateDict[state] ?? num;
+  draw() {
+    // マスの値を何桁で表示するかを指定する
+    const digitDisplayed = 1;
+    const formattedCellNumber = String(this.num).padStart(digitDisplayed, "0");
+    const num = ` ${formattedCellNumber} `;
+    let result = players[this.state]?.color(num) ?? num;
+
     if (this.isPlayer && this.state) {
       result = this.game.drawPlayer(this.state);
     }
@@ -207,7 +207,7 @@ ${text}`;
       text += `${thin("|")}`;
       for (let cellIndex = 0; cellIndex < row.length; cellIndex++) {
         const cell = row[cellIndex];
-        text += cell + `${thin("|")}`;
+        text += `${cell}${thin("|")}`;
       }
       if (rowIndex !== cells.length - 1) {
         text += "\n";
