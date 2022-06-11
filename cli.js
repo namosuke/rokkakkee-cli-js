@@ -247,76 +247,81 @@ ${text}`;
 
   searchMoveable(side) {
     const pos = this.poss[side];
-    if (this.poss[side] === null) {
-      return this.cellsMap.portals[side];
-    } else {
-      const result = [];
-      this.cells.forEach((row) =>
-        row.forEach((cell) => {
-          if (pos[0] % 2 === 0) {
-            if (
-              (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1) ||
+
+    if (pos === null) return this.cellsMap.portals[side];
+
+    const result = [];
+
+    this.cells.forEach((row) =>
+      row.forEach((cell) => {
+        if (pos[0] % 2 === 0) {
+          if (
+            (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-            ) {
-              result.push(cell);
-            }
-          } else {
-            if (
-              (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
+          ) {
+            result.push(cell);
+          }
+        } else {
+          if (
+            (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] + 1)
-            ) {
-              result.push(cell);
-            }
+          ) {
+            result.push(cell);
           }
-        })
-      );
-      result.sort((a, b) => {
-        const orders = [0, 0];
-        [a, b].forEach((cell, index) => {
-          const diffY = this.poss[this.currentSide][0] - cell.pos[0];
-          const diffX = this.poss[this.currentSide][1] - cell.pos[1];
-          if (cell.pos[0] % 2 === 0) {
-            if (diffY === -1 && diffX === 0) {
-              orders[index] = 0;
-            } else if (diffY === 0 && diffX === 1) {
-              orders[index] = 1;
-            } else if (diffY === 1 && diffX === 0) {
-              orders[index] = 2;
-            } else if (diffY === 1 && diffX === -1) {
-              orders[index] = 3;
-            } else if (diffY === 0 && diffX === -1) {
-              orders[index] = 4;
-            } else if (diffY === -1 && diffX === -1) {
-              orders[index] = 5;
-            }
-          } else {
-            if (diffY === -1 && diffX === 1) {
-              orders[index] = 0;
-            } else if (diffY === 0 && diffX === 1) {
-              orders[index] = 1;
-            } else if (diffY === 1 && diffX === 1) {
-              orders[index] = 2;
-            } else if (diffY === 1 && diffX === 0) {
-              orders[index] = 3;
-            } else if (diffY === 0 && diffX === -1) {
-              orders[index] = 4;
-            } else if (diffY === -1 && diffX === 0) {
-              orders[index] = 5;
-            }
+        }
+      })
+    );
+
+    result.sort((a, b) => {
+      const orders = [0, 0];
+
+      [a, b].forEach((cell, index) => {
+        const diffY = this.poss[this.currentSide][0] - cell.pos[0];
+        const diffX = this.poss[this.currentSide][1] - cell.pos[1];
+
+        if (cell.pos[0] % 2 === 0) {
+          if (diffY === -1 && diffX === 0) {
+            orders[index] = 0;
+          } else if (diffY === 0 && diffX === 1) {
+            orders[index] = 1;
+          } else if (diffY === 1 && diffX === 0) {
+            orders[index] = 2;
+          } else if (diffY === 1 && diffX === -1) {
+            orders[index] = 3;
+          } else if (diffY === 0 && diffX === -1) {
+            orders[index] = 4;
+          } else if (diffY === -1 && diffX === -1) {
+            orders[index] = 5;
           }
-        });
-        return orders[0] - orders[1];
+        } else {
+          if (diffY === -1 && diffX === 1) {
+            orders[index] = 0;
+          } else if (diffY === 0 && diffX === 1) {
+            orders[index] = 1;
+          } else if (diffY === 1 && diffX === 1) {
+            orders[index] = 2;
+          } else if (diffY === 1 && diffX === 0) {
+            orders[index] = 3;
+          } else if (diffY === 0 && diffX === -1) {
+            orders[index] = 4;
+          } else if (diffY === -1 && diffX === 0) {
+            orders[index] = 5;
+          }
+        }
       });
-      return result;
-    }
+
+      return orders[0] - orders[1];
+    });
+
+    return result;
   }
 
   turn(side = this.currentSide) {
