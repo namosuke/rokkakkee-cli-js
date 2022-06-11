@@ -13,23 +13,21 @@ const swap = (str) => `\x1b[7m${str}\x1b[0m`;
 const colorA = (str) => `\x1b[32m${str}\x1b[0m`;
 const colorB = (str) => `\x1b[35m${str}\x1b[0m`;
 
-const items = {
-  players: {
-    playerA: colorA("You"),
-    playerB: colorB("CPU"),
+const players = {
+  playerA: {
+    color: colorA,
+    displayedName: colorA("You"),
+    portal: colorA("---"),
+    turnMessage: `${colorA("あなた")}のターンです`,
+    winningMessage: `${colorA("あなた")}の勝ち！`,
   },
-  portals: {
-    playerA: colorA("---"),
-    playerB: colorB("---"),
-  },
-  turns: {
-    playerA: `${colorA("あなた")}のターンです`,
-    playerB: `${colorB("CPU")}のターンです`,
-  },
-  winners: {
-    playerA: `${colorA("あなた")}の勝ち！`,
-    playerB: `${colorB("CPU")}の勝ち！`,
-  },
+  playerB: {
+    color: colorB,
+    displayedName: colorB("CPU"),
+    portal: colorB("---"),
+    turnMessage: `${colorB("CPU")}のターンです`,
+    winningMessage: `${colorB("CPU")}の勝ち！`,
+  }
 };
 
 class Cell {
@@ -190,9 +188,7 @@ class Game {
   }
 
   static template(portalA, portalB, cells, text, pointA, pointB) {
-    return `${items.players.playerA}: ${pointA} / ${
-      items.players.playerB
-    }: ${pointB}
+    return `${players.playerA.displayedName}: ${pointA} / ${players.playerB.displayedName}: ${pointB}
 
       ${thin("(")}${portalB}${thin(")")}
 ${Game.cellsTemplate(cells)}
@@ -230,14 +226,14 @@ ${text}`;
       Game.template(
         this.poss.playerA === null
           ? this.drawPlayer("playerA")
-          : items.portals.playerA,
+          : players.playerA.portal,
         this.poss.playerB === null
           ? this.drawPlayer("playerB")
-          : items.portals.playerB,
+          : players.playerB.portal,
         this.cells.map((row) => row.map((cell) => cell.draw())),
         this.isGameOver
-          ? items.winners[this.winner]
-          : items.turns[this.currentSide],
+          ? players[this.winner].winningMessage
+          : players[this.currentSide].turnMessage,
         this.points.playerA,
         this.points.playerB
       )
@@ -246,8 +242,8 @@ ${text}`;
 
   drawPlayer(side) {
     return this.currentSide === side
-      ? bold(items.players[side])
-      : items.players[side];
+      ? bold(players[side].displayedName)
+      : players[side].displayedName;
   }
 
   searchMoveable(side) {
