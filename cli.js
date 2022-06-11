@@ -42,6 +42,7 @@ class Cell {
     this.isSelecting = false;
     this.isPlayer = false;
   }
+
   draw(num = this.num, state = this.state) {
     num = " " + String(num).padStart(1, "0") + " ";
     const stateDict = {
@@ -71,7 +72,11 @@ class Game {
         new Cell(this, [0, 2]),
         new Cell(this, [0, 3]),
       ],
-      [new Cell(this, [1, 0]), new Cell(this, [1, 1]), new Cell(this, [1, 2])],
+      [
+        new Cell(this, [1, 0]),
+        new Cell(this, [1, 1]),
+        new Cell(this, [1, 2])
+      ],
       [
         new Cell(this, [2, 0]),
         new Cell(this, [2, 1]),
@@ -100,6 +105,7 @@ class Game {
     this.gameEndCellCount = 11;
     this.start();
   }
+
   start() {
     // https://note.affi-sapo-sv.com/nodejs-console-cursor-onoff.php
     console.log("\x1b[?25l");
@@ -182,6 +188,7 @@ class Game {
     this.turn();
     this.draw();
   }
+
   static template(portalA, portalB, cells, text, pointA, pointB) {
     return `${items.players.playerA}: ${pointA} / ${
       items.players.playerB
@@ -193,6 +200,7 @@ ${Game.cellsTemplate(cells)}
 
 ${text}`;
   }
+
   static cellsTemplate(cells) {
     let text = "";
     for (let rowIndex = 0; rowIndex < cells.length; rowIndex++) {
@@ -211,9 +219,11 @@ ${text}`;
     }
     return text;
   }
+
   nextSide(side) {
     return side === "playerA" ? "playerB" : "playerA";
   }
+
   draw() {
     console.clear();
     console.log(
@@ -233,11 +243,13 @@ ${text}`;
       )
     );
   }
+
   drawPlayer(side) {
     return this.currentSide === side
       ? bold(items.players[side])
       : items.players[side];
   }
+
   searchMoveable(side) {
     const pos = this.poss[side];
     if (this.poss[side] === null) {
@@ -311,6 +323,7 @@ ${text}`;
       return result;
     }
   }
+
   turn(side = this.currentSide) {
     this.currentSide = side;
     this.selectingId = 0;
@@ -323,6 +336,7 @@ ${text}`;
     this.searchMoveable(side).map((cell) => (cell.isMoveable = true));
     this.searchMoveable(side)[this.selectingId].isSelecting = true;
   }
+
   countPoint(side, cells) {
     let point = 0;
     cells.forEach((row) => {
