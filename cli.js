@@ -101,7 +101,6 @@ class Game {
     this.isGameOver = false;
     this.winner = null;
     this.gameEndCellCount = 11;
-    this.start();
   }
 
   start() {
@@ -346,4 +345,6 @@ ${text}`;
   }
 }
 
-new Game();
+const game = new Game();
+
+game.start();
