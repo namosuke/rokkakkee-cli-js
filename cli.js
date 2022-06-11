@@ -121,7 +121,9 @@ class Game {
         } else {
           this.selectingId++;
         }
-        this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
+        this.cells.forEach((row) => row.forEach((cell) => {
+          cell.isSelecting = false;
+        }));
         moveable[this.selectingId].isSelecting = true;
       } else if (key.name === "left") {
         if (this.selectingId - 1 < 0) {
@@ -129,7 +131,9 @@ class Game {
         } else {
           this.selectingId--;
         }
-        this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
+        this.cells.forEach((row) => row.forEach((cell) => {
+          cell.isSelecting = false;
+        }));
         moveable[this.selectingId].isSelecting = true;
       } else if (key.name === "up") {
         // 移動先が敵陣かつプレイヤーでないとき
@@ -172,12 +176,10 @@ class Game {
         this.isGameOver = true;
         this.winner =
           this.points.playerA > this.points.playerB ? "playerA" : "playerB";
-        this.cells.map((row) =>
-          row.map((cell) => {
-            cell.isMoveable = false;
-            cell.isSelecting = false;
-          })
-        );
+        this.cells.forEach((row) => row.forEach((cell) => {
+          cell.isMoveable = false;
+          cell.isSelecting = false;
+        }));
         this.currentSide = null;
       }
       this.draw();
@@ -252,33 +254,31 @@ ${text}`;
 
     const result = [];
 
-    this.cells.forEach((row) =>
-      row.forEach((cell) => {
-        if (pos[0] % 2 === 0) {
-          if (
-            (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1) ||
+    this.cells.forEach((row) => row.forEach((cell) => {
+      if (pos[0] % 2 === 0) {
+        if (
+          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-          ) {
-            result.push(cell);
-          }
-        } else {
-          if (
-            (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
+        ) {
+          result.push(cell);
+        }
+      } else {
+        if (
+          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1) ||
               (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1]) ||
               (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] + 1)
-          ) {
-            result.push(cell);
-          }
+        ) {
+          result.push(cell);
         }
-      })
-    );
+      }
+    }));
 
     result.sort((a, b) => {
       const orders = [0, 0];
@@ -327,25 +327,21 @@ ${text}`;
   turn(side = this.currentSide) {
     this.currentSide = side;
     this.selectingId = 0;
-    this.cells.map((row) =>
-      row.map((cell) => {
-        cell.isMoveable = false;
-        cell.isSelecting = false;
-      })
-    );
-    this.searchMoveable(side).map((cell) => (cell.isMoveable = true));
+    this.cells.forEach((row) => row.forEach((cell) => {
+      cell.isMoveable = false;
+      cell.isSelecting = false;
+    }));
+    this.searchMoveable(side).forEach((cell) => {
+      cell.isMoveable = true;
+    });
     this.searchMoveable(side)[this.selectingId].isSelecting = true;
   }
 
   countPoint(side, cells) {
     let point = 0;
-    cells.forEach((row) => {
-      row.forEach((cell) => {
-        if (cell.state === side) {
-          point += 1;
-        }
-      });
-    });
+    cells.forEach((row) => row.forEach((cell) => {
+      if (cell.state === side) point += 1;
+    }));
     return point;
   }
 }
