@@ -3,17 +3,6 @@
 // type Position = [number, number];
 // type PlayerIdentifier = null | "playerA" | "playerB";
 
-// interface Player {
-//   readonly color: (str: string) => string;
-//   readonly displayedName: string;
-//   readonly portal: string;
-//   readonly turnMessage: string;
-//   readonly winningMessage: string;
-//   readonly portalAdjacentCells: [Cell, Cell];
-//   pos: null | Position;
-//   point: number;
-// }
-
 const readline = require("readline");
 
 // これが無いとCtrl+Cで終了できない
@@ -29,6 +18,50 @@ const underline = (str) => `\x1b[4m${str}\x1b[0m`;
 const swap = (str) => `\x1b[7m${str}\x1b[0m`;
 const colorA = (str) => `\x1b[32m${str}\x1b[0m`;
 const colorB = (str) => `\x1b[35m${str}\x1b[0m`;
+
+// ({ color, displayedName, alias, portalAdjacentCells}: {
+//   color: (str: string) => string;
+//   displayedName: string;
+//   alias: string;
+//   portalAdjacentCells: [Cell, Cell];
+// }) => Player;
+class Player {
+  // readonly game: Game;
+  // readonly id: PlayerIdentifier;
+  // readonly color: (str: string) => string;
+  // readonly displayedName: string;
+  // readonly portal: string;
+  // readonly turnMessage: string;
+  // readonly winningMessage: string;
+  // readonly portalAdjacentCells: [Cell, Cell];
+  // pos: null | Position;
+
+  constructor({
+    game,
+    id,
+    color,
+    displayedName,
+    alias,
+    portalAdjacentCells,
+  }) {
+    this.game = game;
+    this.id = id;
+    this.color = color;
+    this.displayedName = color(displayedName);
+    this.portal = color("---");
+    this.turnMessage = `${color(alias)}のターンです`;
+    this.winningMessage = `${color(alias)}の勝ち！`;
+    this.portalAdjacentCells = portalAdjacentCells;
+    this.pos = null;
+  }
+
+  // () => number;
+  get point() {
+    return this.game.cells.flat().reduce((sum, cell) => (
+      cell.state === this.id ? sum + 1 : sum
+    ), 0);
+  }
+}
 
 // (
 //   game: Game,
@@ -62,7 +95,7 @@ class Cell {
     const formattedCellNumber = String(this.num).padStart(digitDisplayed, "0");
     const num = ` ${formattedCellNumber} `;
 
-    let result = this.game.players[this.state]?.color(num) ?? num;
+    let result = this.game[this.state]?.color(num) ?? num;
 
     if (this.isPlayer && this.state) {
       result = this.game.drawPlayer(this.state);
@@ -79,10 +112,8 @@ class Cell {
 
 class Game {
   // readonly cells: Cell[][];
-  // players: {
-  //   playerA: Player,
-  //   playerB: Player,
-  // };
+  // readonly playerA: Player;
+  // readonly playerB: Player;
   // currentSide: PlayerIdentifier;
   // selectingId: number;
   // isGameOver: boolean;
@@ -110,34 +141,41 @@ class Game {
       ],
     ];
 
-    this.players = {
-      playerA: {
-        color: colorA,
-        displayedName: colorA("You"),
-        portal: colorA("---"),
-        turnMessage: `${colorA("あなた")}のターンです`,
-        winningMessage: `${colorA("あなた")}の勝ち！`,
-        portalAdjacentCells: [this.cells[2][1], this.cells[2][2]],
-        pos: null,
-        point: 0,
-      },
-      playerB: {
-        color: colorB,
-        displayedName: colorB("CPU"),
-        portal: colorB("---"),
-        turnMessage: `${colorB("CPU")}のターンです`,
-        winningMessage: `${colorB("CPU")}の勝ち！`,
-        portalAdjacentCells: [this.cells[0][2], this.cells[0][1]],
-        pos: null,
-        point: 0,
-      },
-    };
+    this.playerA = new Player({
+      game: this,
+      id: "playerA",
+      color: colorA,
+      displayedName: "You",
+      alias: "あなた",
+      portalAdjacentCells: [this.cells[2][1], this.cells[2][2]],
+    });
+
+    this.playerB = new Player({
+      game: this,
+      id: "playerB",
+      color: colorB,
+      displayedName: "CPU",
+      alias: "CPU",
+      portalAdjacentCells: [this.cells[0][2], this.cells[0][1]],
+    });
 
     this.currentSide = "playerA";
     this.selectingId = 0;
     this.isGameOver = false;
     this.winner = null;
     this.gameEndCellCount = 11;
+  }
+
+  get nextSide() {
+    return this.currentSide === "playerA" ? "playerB" : "playerA";
+  }
+
+  get currentPlayer() {
+    return this[this.currentSide];
+  }
+
+  get nextPlayer() {
+    return this[this.nextSide];
   }
 
   start() {
@@ -180,7 +218,7 @@ class Game {
         // 移動先が敵陣かつプレイヤーでないとき
         if (
           moveable[this.selectingId].state === this.nextSide
-          && this.players[this.nextSide].pos !== moveable[this.selectingId].pos
+          && this.nextPlayer.pos !== moveable[this.selectingId].pos
         ) {
           if (moveable[this.selectingId].num === 1) {
             moveable[this.selectingId].state = null;
@@ -188,32 +226,27 @@ class Game {
           moveable[this.selectingId].num -= 1;
         } else {
           // もし敵プレイヤーなら
-          if (
-            this.players[this.nextSide].pos === moveable[this.selectingId].pos
-          ) {
-            this.players[this.nextSide].pos = null;
+          if (this.nextPlayer.pos === moveable[this.selectingId].pos) {
+            this.nextPlayer.pos = null;
             moveable[this.selectingId].num = 0;
           }
           moveable[this.selectingId].state = this.currentSide;
           // 移動時にisPlayerをリセット
-          if (this.players[this.currentSide].pos) {
-            const { pos: [row, col] } = this.players[this.currentSide];
+          if (this.currentPlayer.pos) {
+            const { pos: [row, col] } = this.currentPlayer;
             this.cells[row][col].isPlayer = false;
             this.cells[row][col].num += 1;
           }
           moveable[this.selectingId].isPlayer = true;
-          this.players[this.currentSide].pos = moveable[this.selectingId].pos;
+          this.currentPlayer.pos = moveable[this.selectingId].pos;
         }
         this.turn(this.nextSide);
       }
 
-      this.players.playerA.point = this.countPoint("playerA");
-      this.players.playerB.point = this.countPoint("playerB");
-
-      if (this.players.playerA.point + this.players.playerB.point >= this.gameEndCellCount) {
+      if (this.playerA.point + this.playerB.point >= this.gameEndCellCount) {
         this.isGameOver = true;
         this.winner = (
-          this.players.playerA.point > this.players.playerB.point ? "playerA" : "playerB"
+          this.playerA.point > this.playerB.point ? "playerA" : "playerB"
         );
         this.cells.forEach((row) => row.forEach((cell) => {
           cell.isMoveable = false;
@@ -248,37 +281,33 @@ class Game {
     return text;
   }
 
-  get nextSide() {
-    return this.currentSide === "playerA" ? "playerB" : "playerA";
-  }
-
   draw() {
     console.clear();
 
     const portalA = (
-      this.players.playerA.pos === null
+      this.playerA.pos === null
         ? this.drawPlayer("playerA")
-        : this.players.playerA.portal
+        : this.playerA.portal
     );
 
     const portalB = (
-      this.players.playerB.pos === null
+      this.playerB.pos === null
         ? this.drawPlayer("playerB")
-        : this.players.playerB.portal
+        : this.playerB.portal
     );
 
     const cells = this.cells.map((row) => row.map((cell) => cell.draw()));
 
     const text = (
       this.isGameOver
-        ? this.players[this.winner].winningMessage
-        : this.players[this.currentSide].turnMessage
+        ? this[this.winner].winningMessage
+        : this.currentPlayer.turnMessage
     );
 
-    const pointA = this.players.playerA.point;
-    const pointB = this.players.playerB.point;
+    const { displayedName: displayedNameA, point: pointA } = this.playerA;
+    const { displayedName: displayedNameB, point: pointB } = this.playerB;
 
-    console.log(`${this.players.playerA.displayedName}: ${pointA} / ${this.players.playerB.displayedName}: ${pointB}
+    console.log(`${displayedNameA}: ${pointA} / ${displayedNameB}: ${pointB}
 
       ${thin("(")}${portalB}${thin(")")}
 ${Game.cellsTemplate(cells)}
@@ -290,15 +319,16 @@ ${text}`);
   // (side: PlayerIdentifier) => string
   drawPlayer(side) {
     return this.currentSide === side
-      ? bold(this.players[side].displayedName)
-      : this.players[side].displayedName;
+      ? bold(this[side].displayedName)
+      : this[side].displayedName;
   }
 
   // (side: PlayerIdentifier) => Cell[]
   searchMoveable(side) {
-    const { pos } = this.players[side];
+    const player = this[side];
+    const { pos } = player;
 
-    if (pos === null) return this.players[side].portalAdjacentCells;
+    if (pos === null) return player.portalAdjacentCells;
 
     const result = [];
 
@@ -332,8 +362,8 @@ ${text}`);
       const orders = [0, 0];
 
       [a, b].forEach((cell, index) => {
-        const diffY = this.players[this.currentSide].pos[0] - cell.pos[0];
-        const diffX = this.players[this.currentSide].pos[1] - cell.pos[1];
+        const diffY = this.currentPlayer.pos[0] - cell.pos[0];
+        const diffX = this.currentPlayer.pos[1] - cell.pos[1];
 
         if (cell.pos[0] % 2 === 0) {
           if (diffY === -1 && diffX === 0) {
@@ -384,15 +414,6 @@ ${text}`);
       cell.isMoveable = true;
     });
     this.searchMoveable(side)[this.selectingId].isSelecting = true;
-  }
-
-  // (side: PlayerIdentifier) => number
-  countPoint(side) {
-    let point = 0;
-    this.cells.forEach((row) => row.forEach((cell) => {
-      if (cell.state === side) point += 1;
-    }));
-    return point;
   }
 }
 
