@@ -113,7 +113,7 @@ class Game {
     process.on("SIGINT", () => process.exit(0));
     readline.emitKeypressEvents(process.stdin);
     process.stdin.setRawMode(true);
-    process.stdin.on("keypress", (str, key) => {
+    process.stdin.on("keypress", (_str, key) => {
       if (this.isGameOver) {
         return;
       }
