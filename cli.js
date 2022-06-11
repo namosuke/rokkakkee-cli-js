@@ -38,7 +38,7 @@ class Cell {
     this.pos = pos;
     this.num = num;
     this.state = state;
-    this.isMovable = false;
+    this.isMoveable = false;
     this.isSelecting = false;
     this.isPlayer = false;
   }
@@ -52,7 +52,7 @@ class Cell {
     if (this.isPlayer && this.state) {
       result = this.game.drawPlayer(this.state);
     }
-    if (this.isMovable) {
+    if (this.isMoveable) {
       result = underline(result);
     }
     if (this.isSelecting) {
@@ -111,44 +111,44 @@ class Game {
       if (this.isGameOver) {
         return;
       }
-      const movable = this.searchMovable(this.currentSide);
+      const moveable = this.searchMoveable(this.currentSide);
       if (key.name === "right") {
-        if (this.selectingId + 1 >= movable.length) {
+        if (this.selectingId + 1 >= moveable.length) {
           this.selectingId = 0;
         } else {
           this.selectingId++;
         }
         this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
-        movable[this.selectingId].isSelecting = true;
+        moveable[this.selectingId].isSelecting = true;
       } else if (key.name === "left") {
         if (this.selectingId - 1 < 0) {
-          this.selectingId = movable.length - 1;
+          this.selectingId = moveable.length - 1;
         } else {
           this.selectingId--;
         }
         this.cells.map((row) => row.map((cell) => (cell.isSelecting = false)));
-        movable[this.selectingId].isSelecting = true;
+        moveable[this.selectingId].isSelecting = true;
       } else if (key.name === "up") {
         // 移動先が敵陣かつプレイヤーでないとき
         if (
-          movable[this.selectingId].state === this.nextSide(this.currentSide) &&
+          moveable[this.selectingId].state === this.nextSide(this.currentSide) &&
           this.poss[this.nextSide(this.currentSide)] !==
-            movable[this.selectingId].pos
+            moveable[this.selectingId].pos
         ) {
-          if (movable[this.selectingId].num === 1) {
-            movable[this.selectingId].state = null;
+          if (moveable[this.selectingId].num === 1) {
+            moveable[this.selectingId].state = null;
           }
-          movable[this.selectingId].num -= 1;
+          moveable[this.selectingId].num -= 1;
         } else {
           // もし敵プレイヤーなら
           if (
             this.poss[this.nextSide(this.currentSide)] ===
-            movable[this.selectingId].pos
+            moveable[this.selectingId].pos
           ) {
             this.poss[this.nextSide(this.currentSide)] = null;
-            movable[this.selectingId].num = 0;
+            moveable[this.selectingId].num = 0;
           }
-          movable[this.selectingId].state = this.currentSide;
+          moveable[this.selectingId].state = this.currentSide;
           // 移動時にisPlayerをリセット
           if (this.poss[this.currentSide]) {
             this.cells[this.poss[this.currentSide][0]][
@@ -158,8 +158,8 @@ class Game {
               this.poss[this.currentSide][1]
             ].num += 1;
           }
-          movable[this.selectingId].isPlayer = true;
-          this.poss[this.currentSide] = movable[this.selectingId].pos;
+          moveable[this.selectingId].isPlayer = true;
+          this.poss[this.currentSide] = moveable[this.selectingId].pos;
         }
         this.turn(this.nextSide(this.currentSide));
       }
@@ -171,7 +171,7 @@ class Game {
           this.points.playerA > this.points.playerB ? "playerA" : "playerB";
         this.cells.map((row) =>
           row.map((cell) => {
-            cell.isMovable = false;
+            cell.isMoveable = false;
             cell.isSelecting = false;
           })
         );
@@ -238,7 +238,7 @@ ${text}`;
       ? bold(items.players[side])
       : items.players[side];
   }
-  searchMovable(side) {
+  searchMoveable(side) {
     const pos = this.poss[side];
     if (this.poss[side] === null) {
       return this.cellsMap.portals[side];
@@ -316,12 +316,12 @@ ${text}`;
     this.selectingId = 0;
     this.cells.map((row) =>
       row.map((cell) => {
-        cell.isMovable = false;
+        cell.isMoveable = false;
         cell.isSelecting = false;
       })
     );
-    this.searchMovable(side).map((cell) => (cell.isMovable = true));
-    this.searchMovable(side)[this.selectingId].isSelecting = true;
+    this.searchMoveable(side).map((cell) => (cell.isMoveable = true));
+    this.searchMoveable(side)[this.selectingId].isSelecting = true;
   }
   countPoint(side, cells) {
     let point = 0;
