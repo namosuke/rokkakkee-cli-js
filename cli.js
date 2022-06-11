@@ -252,6 +252,7 @@ class Game {
           cell.isMoveable = false;
           cell.isSelecting = false;
         }));
+        // 勝利メッセージは bold したくないから null にしたらしい
         this.currentSide = null;
       }
 
