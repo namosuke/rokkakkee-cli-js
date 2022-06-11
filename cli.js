@@ -1,7 +1,7 @@
 const readline = require("readline");
 
 // これが無いとCtrl+Cで終了できない
-const rl = readline.createInterface({
+readline.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
@@ -337,8 +337,3 @@ ${text}`;
 }
 
 new Game();
-
-// process.exit();
-// rl.question("入力してください > ", (inputString) => {
-//   rl.write(`入力された文字：[${inputString}]`);
-// });
