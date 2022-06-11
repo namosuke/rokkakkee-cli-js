@@ -27,7 +27,7 @@ const players = {
     portal: colorB("---"),
     turnMessage: `${colorB("CPU")}のターンです`,
     winningMessage: `${colorB("CPU")}の勝ち！`,
-  }
+  },
 };
 
 class Cell {
@@ -73,7 +73,7 @@ class Game {
       [
         new Cell(this, [1, 0]),
         new Cell(this, [1, 1]),
-        new Cell(this, [1, 2])
+        new Cell(this, [1, 2]),
       ],
       [
         new Cell(this, [2, 0]),
@@ -236,8 +236,8 @@ ${text}`;
           ? players[this.winner].winningMessage
           : players[this.currentSide].turnMessage,
         this.points.playerA,
-        this.points.playerB
-      )
+        this.points.playerB,
+      ),
     );
   }
 
