@@ -92,7 +92,7 @@ class Cell {
   // readonly pos: Position;
   // num: number;
   // player: Player;
-  // isMoveable: boolean;
+  // isMovable: boolean;
   // isSelecting: boolean;
   // isPlayer: boolean;
 
@@ -101,7 +101,7 @@ class Cell {
     this.pos = pos;
     this.num = num ?? 0;
     this.player = player ?? null;
-    this.isMoveable = false;
+    this.isMovable = false;
     this.isSelecting = false;
     this.isPlayer = false;
   }
@@ -118,7 +118,7 @@ class Cell {
     if (this.isPlayer && this.player) {
       result = this.player.toString();
     }
-    if (this.isMoveable) {
+    if (this.isMovable) {
       result = underline(result);
     }
     if (this.isSelecting) {
@@ -193,7 +193,7 @@ class Game {
   }
 
   // (player: Player) => Cell[]
-  searchMoveable(player = this.currentPlayer) {
+  searchMovable(player = this.currentPlayer) {
     const { pos } = player;
 
     if (pos === null) return player.portalAdjacentCells;
@@ -275,13 +275,13 @@ class Game {
     this.selectingId = 0;
 
     this.cells.forEach((row) => row.forEach((cell) => {
-      cell.isMoveable = false;
+      cell.isMovable = false;
       cell.isSelecting = false;
     }));
 
-    const moveableCells = this.searchMoveable();
-    moveableCells.forEach((cell) => { cell.isMoveable = true; });
-    moveableCells[this.selectingId].isSelecting = true;
+    const movableCells = this.searchMovable();
+    movableCells.forEach((cell) => { cell.isMovable = true; });
+    movableCells[this.selectingId].isSelecting = true;
   }
 
   draw() {
@@ -316,17 +316,17 @@ class Game {
     process.stdin.on("keypress", (_str, key) => {
       if (this.isGameOver) return;
 
-      const moveableCells = this.searchMoveable();
+      const movableCells = this.searchMovable();
 
       if (key.name === "left" || key.name === "right") {
         if (key.name === "left") {
           if (this.selectingId - 1 < 0) {
-            this.selectingId = moveableCells.length - 1;
+            this.selectingId = movableCells.length - 1;
           } else {
             this.selectingId--;
           }
         } else if (key.name === "right") {
-          if (this.selectingId + 1 >= moveableCells.length) {
+          if (this.selectingId + 1 >= movableCells.length) {
             this.selectingId = 0;
           } else {
             this.selectingId++;
@@ -337,11 +337,11 @@ class Game {
           cell.isSelecting = false;
         }));
 
-        moveableCells[this.selectingId].isSelecting = true;
+        movableCells[this.selectingId].isSelecting = true;
       }
 
       if (key.name === "up") {
-        const selectingCell = moveableCells[this.selectingId];
+        const selectingCell = movableCells[this.selectingId];
 
         // 移動先が敵陣かつプレイヤーでないとき
         if (selectingCell.player === this.nextPlayer
@@ -376,7 +376,7 @@ class Game {
 
       if (this.isGameOver) {
         this.cells.forEach((row) => row.forEach((cell) => {
-          cell.isMoveable = false;
+          cell.isMovable = false;
           cell.isSelecting = false;
         }));
       }
