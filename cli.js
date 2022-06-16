@@ -73,7 +73,9 @@ class Player {
 
   // () => string
   toString() {
-    const useBold = this === this.game.currentPlayer;
+    // currentPlayer だけ bold で表示する
+    // ゲーム終了時は bold で表示しない
+    const useBold = this === this.game.currentPlayer && !this.game.isGameOver;
 
     return useBold ? bold(this.displayedName) : this.displayedName;
   }
@@ -130,10 +132,8 @@ class Game {
   // readonly cells: Cell[][];
   // readonly playerA: Player;
   // readonly playerB: Player;
-  // currentSide: PlayerIdentifier;
+  // currentPlayer: Player;
   // selectingId: number;
-  // isGameOver: boolean;
-  // readonly gameEndCellCount: number;
 
   constructor() {
     this.cells = [
@@ -174,14 +174,8 @@ class Game {
       portalAdjacentCells: [this.cells[0][2], this.cells[0][1]],
     });
 
-    this.currentSide = "playerA";
+    this.currentPlayer = this.playerB;
     this.selectingId = 0;
-    this.isGameOver = false;
-    this.gameEndCellCount = 11;
-  }
-
-  get currentPlayer() {
-    return this[this.currentSide];
   }
 
   get nextPlayer() {
@@ -192,8 +186,14 @@ class Game {
     return this.playerA.point > this.playerB.point ? this.playerA : this.playerB;
   }
 
+  get isGameOver() {
+    const maxPointAvailable = this.cells.flat().length;
+
+    return this.playerA.point + this.playerB.point >= maxPointAvailable;
+  }
+
   // (player: Player) => Cell[]
-  searchMoveable(player) {
+  searchMoveable(player = this.currentPlayer) {
     const { pos } = player;
 
     if (pos === null) return player.portalAdjacentCells;
@@ -270,18 +270,18 @@ class Game {
     return result;
   }
 
-  // (player: Player) => void
-  turn(player) {
-    this.currentSide = player.id;
+  turn() {
+    this.currentPlayer = this.nextPlayer;
     this.selectingId = 0;
+
     this.cells.forEach((row) => row.forEach((cell) => {
       cell.isMoveable = false;
       cell.isSelecting = false;
     }));
-    this.searchMoveable(player).forEach((cell) => {
-      cell.isMoveable = true;
-    });
-    this.searchMoveable(player)[this.selectingId].isSelecting = true;
+
+    const moveableCells = this.searchMoveable();
+    moveableCells.forEach((cell) => { cell.isMoveable = true; });
+    moveableCells[this.selectingId].isSelecting = true;
   }
 
   draw() {
@@ -316,74 +316,75 @@ class Game {
     process.stdin.on("keypress", (_str, key) => {
       if (this.isGameOver) return;
 
-      const moveable = this.searchMoveable(this.currentPlayer);
+      const moveableCells = this.searchMoveable();
 
-      if (key.name === "right") {
-        if (this.selectingId + 1 >= moveable.length) {
-          this.selectingId = 0;
-        } else {
-          this.selectingId++;
+      if (key.name === "left" || key.name === "right") {
+        if (key.name === "left") {
+          if (this.selectingId - 1 < 0) {
+            this.selectingId = moveableCells.length - 1;
+          } else {
+            this.selectingId--;
+          }
+        } else if (key.name === "right") {
+          if (this.selectingId + 1 >= moveableCells.length) {
+            this.selectingId = 0;
+          } else {
+            this.selectingId++;
+          }
         }
+
         this.cells.forEach((row) => row.forEach((cell) => {
           cell.isSelecting = false;
         }));
-        moveable[this.selectingId].isSelecting = true;
-      }
 
-      if (key.name === "left") {
-        if (this.selectingId - 1 < 0) {
-          this.selectingId = moveable.length - 1;
-        } else {
-          this.selectingId--;
-        }
-        this.cells.forEach((row) => row.forEach((cell) => {
-          cell.isSelecting = false;
-        }));
-        moveable[this.selectingId].isSelecting = true;
+        moveableCells[this.selectingId].isSelecting = true;
       }
 
       if (key.name === "up") {
+        const selectingCell = moveableCells[this.selectingId];
+
         // 移動先が敵陣かつプレイヤーでないとき
-        if (
-          moveable[this.selectingId].player === this.nextPlayer
-          && this.nextPlayer.pos !== moveable[this.selectingId].pos
-        ) {
-          if (moveable[this.selectingId].num === 1) {
-            moveable[this.selectingId].player = null;
+        if (selectingCell.player === this.nextPlayer
+        && selectingCell.pos !== this.nextPlayer.pos) {
+          selectingCell.num -= 1;
+
+          if (selectingCell.num === 0) {
+            selectingCell.player = null;
           }
-          moveable[this.selectingId].num -= 1;
         } else {
           // もし敵プレイヤーなら
-          if (this.nextPlayer.pos === moveable[this.selectingId].pos) {
+          if (selectingCell.pos === this.nextPlayer.pos) {
             this.nextPlayer.pos = null;
-            moveable[this.selectingId].num = 0;
+            selectingCell.num = 0;
           }
-          moveable[this.selectingId].player = this.currentPlayer;
+
+          selectingCell.player = this.currentPlayer;
+
           // 移動時にisPlayerをリセット
           if (this.currentPlayer.pos) {
             const { pos: [row, col] } = this.currentPlayer;
             this.cells[row][col].isPlayer = false;
             this.cells[row][col].num += 1;
           }
-          moveable[this.selectingId].isPlayer = true;
-          this.currentPlayer.pos = moveable[this.selectingId].pos;
+
+          selectingCell.isPlayer = true;
+          this.currentPlayer.pos = selectingCell.pos;
         }
-        this.turn(this.nextPlayer);
+
+        this.turn();
       }
 
-      if (this.playerA.point + this.playerB.point >= this.gameEndCellCount) {
-        this.isGameOver = true;
+      if (this.isGameOver) {
         this.cells.forEach((row) => row.forEach((cell) => {
           cell.isMoveable = false;
           cell.isSelecting = false;
         }));
-        // 勝利メッセージは bold したくないから null にしたらしい
-        this.currentSide = null;
       }
 
       this.draw();
     });
-    this.turn(this.currentPlayer);
+
+    this.turn();
     this.draw();
   }
 }
