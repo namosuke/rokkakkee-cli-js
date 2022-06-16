@@ -56,7 +56,7 @@ class Player {
   // () => number;
   get point() {
     return this.game.cells.flat().reduce((sum, cell) => (
-      cell.state === this.id ? sum + 1 : sum
+      cell.player === this ? sum + 1 : sum
     ), 0);
   }
 
@@ -83,22 +83,22 @@ class Player {
 //   game: Game,
 //   pos: Position,
 //   num?: number,
-//   state?: PlayerIdentifier,
+//   player?: Player,
 // ) => Cell
 class Cell {
   // readonly game: Game;
   // readonly pos: Position;
   // num: number;
-  // state: PlayerIdentifier;
+  // player: Player;
   // isMoveable: boolean;
   // isSelecting: boolean;
   // isPlayer: boolean;
 
-  constructor(game, pos, num = 0, state = null) {
+  constructor(game, pos, num, player) {
     this.game = game;
     this.pos = pos;
-    this.num = num;
-    this.state = state;
+    this.num = num ?? 0;
+    this.player = player ?? null;
     this.isMoveable = false;
     this.isSelecting = false;
     this.isPlayer = false;
@@ -111,11 +111,10 @@ class Cell {
     const formattedCellNumber = String(this.num).padStart(digitDisplayed, "0");
     const num = ` ${formattedCellNumber} `;
 
-    let result = this.game[this.state]?.color(num) ?? num;
+    let result = this.player?.color(num) ?? num;
 
-    if (this.isPlayer && this.state) {
-      const player = this.game[this.state];
-      result = player.toString();
+    if (this.isPlayer && this.player) {
+      result = this.player.toString();
     }
     if (this.isMoveable) {
       result = underline(result);
@@ -181,16 +180,12 @@ class Game {
     this.gameEndCellCount = 11;
   }
 
-  get nextSide() {
-    return this.currentSide === "playerA" ? "playerB" : "playerA";
-  }
-
   get currentPlayer() {
     return this[this.currentSide];
   }
 
   get nextPlayer() {
-    return this[this.nextSide];
+    return this.currentPlayer === this.playerA ? this.playerB : this.playerA;
   }
 
   get winner() {
@@ -346,11 +341,11 @@ class Game {
       if (key.name === "up") {
         // 移動先が敵陣かつプレイヤーでないとき
         if (
-          moveable[this.selectingId].state === this.nextSide
+          moveable[this.selectingId].player === this.nextPlayer
           && this.nextPlayer.pos !== moveable[this.selectingId].pos
         ) {
           if (moveable[this.selectingId].num === 1) {
-            moveable[this.selectingId].state = null;
+            moveable[this.selectingId].player = null;
           }
           moveable[this.selectingId].num -= 1;
         } else {
@@ -359,7 +354,7 @@ class Game {
             this.nextPlayer.pos = null;
             moveable[this.selectingId].num = 0;
           }
-          moveable[this.selectingId].state = this.currentSide;
+          moveable[this.selectingId].player = this.currentPlayer;
           // 移動時にisPlayerをリセット
           if (this.currentPlayer.pos) {
             const { pos: [row, col] } = this.currentPlayer;
