@@ -30,7 +30,6 @@ class Player {
   // readonly id: PlayerIdentifier;
   // readonly color: (str: string) => string;
   // readonly displayedName: string;
-  // readonly portal: string;
   // readonly turnMessage: string;
   // readonly winningMessage: string;
   // readonly portalAdjacentCells: [Cell, Cell];
@@ -48,7 +47,6 @@ class Player {
     this.id = id;
     this.color = color;
     this.displayedName = color(displayedName);
-    this.portal = color("---");
     this.turnMessage = `${color(alias)}のターンです`;
     this.winningMessage = `${color(alias)}の勝ち！`;
     this.portalAdjacentCells = portalAdjacentCells;
@@ -60,6 +58,24 @@ class Player {
     return this.game.cells.flat().reduce((sum, cell) => (
       cell.state === this.id ? sum + 1 : sum
     ), 0);
+  }
+
+  get pointMessage() {
+    return `${this.displayedName}: ${this.point}`;
+  }
+
+  get portal() {
+    const onPortal = this.pos === null;
+    const portal = onPortal ? this.toString() : this.color("---");
+
+    return `${thin("(")}${portal}${thin(")")}`;
+  }
+
+  // () => string
+  toString() {
+    const useBold = this === this.game.currentPlayer;
+
+    return useBold ? bold(this.displayedName) : this.displayedName;
   }
 }
 
@@ -89,7 +105,7 @@ class Cell {
   }
 
   // () => string
-  draw() {
+  toString() {
     // マスの値を何桁で表示するかを指定する
     const digitDisplayed = 1;
     const formattedCellNumber = String(this.num).padStart(digitDisplayed, "0");
@@ -98,7 +114,8 @@ class Cell {
     let result = this.game[this.state]?.color(num) ?? num;
 
     if (this.isPlayer && this.state) {
-      result = this.game.drawPlayer(this.state);
+      const player = this.game[this.state];
+      result = player.toString();
     }
     if (this.isMoveable) {
       result = underline(result);
@@ -117,7 +134,6 @@ class Game {
   // currentSide: PlayerIdentifier;
   // selectingId: number;
   // isGameOver: boolean;
-  // winner: PlayerIdentifier;
   // readonly gameEndCellCount: number;
 
   constructor() {
@@ -162,7 +178,6 @@ class Game {
     this.currentSide = "playerA";
     this.selectingId = 0;
     this.isGameOver = false;
-    this.winner = null;
     this.gameEndCellCount = 11;
   }
 
@@ -178,9 +193,12 @@ class Game {
     return this[this.nextSide];
   }
 
-  // (side: PlayerIdentifier) => Cell[]
-  searchMoveable(side) {
-    const player = this[side];
+  get winner() {
+    return this.playerA.point > this.playerB.point ? this.playerA : this.playerB;
+  }
+
+  // (player: Player) => Cell[]
+  searchMoveable(player) {
     const { pos } = player;
 
     if (pos === null) return player.portalAdjacentCells;
@@ -253,80 +271,41 @@ class Game {
     return result;
   }
 
-  // (side?: PlayerIdentifier) => void
-  turn(side = this.currentSide) {
-    this.currentSide = side;
+  // (player: Player) => void
+  turn(player) {
+    this.currentSide = player.id;
     this.selectingId = 0;
     this.cells.forEach((row) => row.forEach((cell) => {
       cell.isMoveable = false;
       cell.isSelecting = false;
     }));
-    this.searchMoveable(side).forEach((cell) => {
+    this.searchMoveable(player).forEach((cell) => {
       cell.isMoveable = true;
     });
-    this.searchMoveable(side)[this.selectingId].isSelecting = true;
-  }
-
-  // (side: PlayerIdentifier) => string
-  drawPlayer(side) {
-    return this.currentSide === side
-      ? bold(this[side].displayedName)
-      : this[side].displayedName;
-  }
-
-  // (cells: string[][]) => string
-  static cellsTemplate(cells) {
-    let text = "";
-    for (let rowIndex = 0; rowIndex < cells.length; rowIndex++) {
-      if (rowIndex % 2 === 1) {
-        text += "  ";
-      }
-      const row = cells[rowIndex];
-      text += `${thin("|")}`;
-      for (let cellIndex = 0; cellIndex < row.length; cellIndex++) {
-        const cell = row[cellIndex];
-        text += `${cell}${thin("|")}`;
-      }
-      if (rowIndex !== cells.length - 1) {
-        text += "\n";
-      }
-    }
-    return text;
+    this.searchMoveable(player)[this.selectingId].isSelecting = true;
   }
 
   draw() {
+    const points = `${this.playerA.pointMessage} / ${this.playerB.pointMessage}`;
+    const portalB = " ".repeat(6) + this.playerB.portal;
+    const portalA = " ".repeat(6) + this.playerA.portal;
+    const cells = this.cells.map((row, rowIndex) => {
+      const paddingSpacesAtBeginning = " ".repeat(rowIndex % 2 ? 2 : 0);
+      const cellRow = row.map((cell) => cell.toString());
+      const rowText = ["", ...cellRow, ""].join(thin("|")); // 前後に "|" をつける
+
+      return paddingSpacesAtBeginning + rowText;
+    }).join("\n");
+    const info = this.isGameOver ? this.winner.winningMessage : this.currentPlayer.turnMessage;
+
     console.clear();
-
-    const portalA = (
-      this.playerA.pos === null
-        ? this.drawPlayer("playerA")
-        : this.playerA.portal
-    );
-
-    const portalB = (
-      this.playerB.pos === null
-        ? this.drawPlayer("playerB")
-        : this.playerB.portal
-    );
-
-    const cells = this.cells.map((row) => row.map((cell) => cell.draw()));
-
-    const text = (
-      this.isGameOver
-        ? this[this.winner].winningMessage
-        : this.currentPlayer.turnMessage
-    );
-
-    const { displayedName: displayedNameA, point: pointA } = this.playerA;
-    const { displayedName: displayedNameB, point: pointB } = this.playerB;
-
-    console.log(`${displayedNameA}: ${pointA} / ${displayedNameB}: ${pointB}
-
-      ${thin("(")}${portalB}${thin(")")}
-${Game.cellsTemplate(cells)}
-      ${thin("(")}${portalA}${thin(")")}
-
-${text}`);
+    console.log(points);
+    console.log();
+    console.log(portalB);
+    console.log(cells);
+    console.log(portalA);
+    console.log();
+    console.log(info);
   }
 
   start() {
@@ -338,7 +317,7 @@ ${text}`);
     process.stdin.on("keypress", (_str, key) => {
       if (this.isGameOver) return;
 
-      const moveable = this.searchMoveable(this.currentSide);
+      const moveable = this.searchMoveable(this.currentPlayer);
 
       if (key.name === "right") {
         if (this.selectingId + 1 >= moveable.length) {
@@ -390,14 +369,11 @@ ${text}`);
           moveable[this.selectingId].isPlayer = true;
           this.currentPlayer.pos = moveable[this.selectingId].pos;
         }
-        this.turn(this.nextSide);
+        this.turn(this.nextPlayer);
       }
 
       if (this.playerA.point + this.playerB.point >= this.gameEndCellCount) {
         this.isGameOver = true;
-        this.winner = (
-          this.playerA.point > this.playerB.point ? "playerA" : "playerB"
-        );
         this.cells.forEach((row) => row.forEach((cell) => {
           cell.isMoveable = false;
           cell.isSelecting = false;
@@ -408,7 +384,7 @@ ${text}`);
 
       this.draw();
     });
-    this.turn();
+    this.turn(this.currentPlayer);
     this.draw();
   }
 }
