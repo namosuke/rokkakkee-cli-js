@@ -178,6 +178,157 @@ class Game {
     return this[this.nextSide];
   }
 
+  // (side: PlayerIdentifier) => Cell[]
+  searchMoveable(side) {
+    const player = this[side];
+    const { pos } = player;
+
+    if (pos === null) return player.portalAdjacentCells;
+
+    const result = [];
+
+    this.cells.forEach((row) => row.forEach((cell) => {
+      if (pos[0] % 2 === 0) {
+        if (
+          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1)
+          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
+          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
+          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
+          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] - 1)
+          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
+        ) {
+          result.push(cell);
+        }
+      } else if (
+        (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
+          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] + 1)
+          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
+          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
+          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
+          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] + 1)
+      ) {
+        result.push(cell);
+      }
+    }));
+
+    result.sort((a, b) => {
+      const orders = [0, 0];
+
+      [a, b].forEach((cell, index) => {
+        const diffY = this.currentPlayer.pos[0] - cell.pos[0];
+        const diffX = this.currentPlayer.pos[1] - cell.pos[1];
+
+        if (cell.pos[0] % 2 === 0) {
+          if (diffY === -1 && diffX === 0) {
+            orders[index] = 0;
+          } else if (diffY === 0 && diffX === 1) {
+            orders[index] = 1;
+          } else if (diffY === 1 && diffX === 0) {
+            orders[index] = 2;
+          } else if (diffY === 1 && diffX === -1) {
+            orders[index] = 3;
+          } else if (diffY === 0 && diffX === -1) {
+            orders[index] = 4;
+          } else if (diffY === -1 && diffX === -1) {
+            orders[index] = 5;
+          }
+        } else if (diffY === -1 && diffX === 1) {
+          orders[index] = 0;
+        } else if (diffY === 0 && diffX === 1) {
+          orders[index] = 1;
+        } else if (diffY === 1 && diffX === 1) {
+          orders[index] = 2;
+        } else if (diffY === 1 && diffX === 0) {
+          orders[index] = 3;
+        } else if (diffY === 0 && diffX === -1) {
+          orders[index] = 4;
+        } else if (diffY === -1 && diffX === 0) {
+          orders[index] = 5;
+        }
+      });
+
+      return orders[0] - orders[1];
+    });
+
+    return result;
+  }
+
+  // (side?: PlayerIdentifier) => void
+  turn(side = this.currentSide) {
+    this.currentSide = side;
+    this.selectingId = 0;
+    this.cells.forEach((row) => row.forEach((cell) => {
+      cell.isMoveable = false;
+      cell.isSelecting = false;
+    }));
+    this.searchMoveable(side).forEach((cell) => {
+      cell.isMoveable = true;
+    });
+    this.searchMoveable(side)[this.selectingId].isSelecting = true;
+  }
+
+  // (side: PlayerIdentifier) => string
+  drawPlayer(side) {
+    return this.currentSide === side
+      ? bold(this[side].displayedName)
+      : this[side].displayedName;
+  }
+
+  // (cells: string[][]) => string
+  static cellsTemplate(cells) {
+    let text = "";
+    for (let rowIndex = 0; rowIndex < cells.length; rowIndex++) {
+      if (rowIndex % 2 === 1) {
+        text += "  ";
+      }
+      const row = cells[rowIndex];
+      text += `${thin("|")}`;
+      for (let cellIndex = 0; cellIndex < row.length; cellIndex++) {
+        const cell = row[cellIndex];
+        text += `${cell}${thin("|")}`;
+      }
+      if (rowIndex !== cells.length - 1) {
+        text += "\n";
+      }
+    }
+    return text;
+  }
+
+  draw() {
+    console.clear();
+
+    const portalA = (
+      this.playerA.pos === null
+        ? this.drawPlayer("playerA")
+        : this.playerA.portal
+    );
+
+    const portalB = (
+      this.playerB.pos === null
+        ? this.drawPlayer("playerB")
+        : this.playerB.portal
+    );
+
+    const cells = this.cells.map((row) => row.map((cell) => cell.draw()));
+
+    const text = (
+      this.isGameOver
+        ? this[this.winner].winningMessage
+        : this.currentPlayer.turnMessage
+    );
+
+    const { displayedName: displayedNameA, point: pointA } = this.playerA;
+    const { displayedName: displayedNameB, point: pointB } = this.playerB;
+
+    console.log(`${displayedNameA}: ${pointA} / ${displayedNameB}: ${pointB}
+
+      ${thin("(")}${portalB}${thin(")")}
+${Game.cellsTemplate(cells)}
+      ${thin("(")}${portalA}${thin(")")}
+
+${text}`);
+  }
+
   start() {
     // カーソルを隠す
     // https://note.affi-sapo-sv.com/nodejs-console-cursor-onoff.php
@@ -251,6 +402,7 @@ class Game {
           cell.isMoveable = false;
           cell.isSelecting = false;
         }));
+        // 勝利メッセージは bold したくないから null にしたらしい
         this.currentSide = null;
       }
 
@@ -258,161 +410,6 @@ class Game {
     });
     this.turn();
     this.draw();
-  }
-
-  // (cells: string[][]) => string
-  static cellsTemplate(cells) {
-    let text = "";
-    for (let rowIndex = 0; rowIndex < cells.length; rowIndex++) {
-      if (rowIndex % 2 === 1) {
-        text += "  ";
-      }
-      const row = cells[rowIndex];
-      text += `${thin("|")}`;
-      for (let cellIndex = 0; cellIndex < row.length; cellIndex++) {
-        const cell = row[cellIndex];
-        text += `${cell}${thin("|")}`;
-      }
-      if (rowIndex !== cells.length - 1) {
-        text += "\n";
-      }
-    }
-    return text;
-  }
-
-  draw() {
-    console.clear();
-
-    const portalA = (
-      this.playerA.pos === null
-        ? this.drawPlayer("playerA")
-        : this.playerA.portal
-    );
-
-    const portalB = (
-      this.playerB.pos === null
-        ? this.drawPlayer("playerB")
-        : this.playerB.portal
-    );
-
-    const cells = this.cells.map((row) => row.map((cell) => cell.draw()));
-
-    const text = (
-      this.isGameOver
-        ? this[this.winner].winningMessage
-        : this.currentPlayer.turnMessage
-    );
-
-    const { displayedName: displayedNameA, point: pointA } = this.playerA;
-    const { displayedName: displayedNameB, point: pointB } = this.playerB;
-
-    console.log(`${displayedNameA}: ${pointA} / ${displayedNameB}: ${pointB}
-
-      ${thin("(")}${portalB}${thin(")")}
-${Game.cellsTemplate(cells)}
-      ${thin("(")}${portalA}${thin(")")}
-
-${text}`);
-  }
-
-  // (side: PlayerIdentifier) => string
-  drawPlayer(side) {
-    return this.currentSide === side
-      ? bold(this[side].displayedName)
-      : this[side].displayedName;
-  }
-
-  // (side: PlayerIdentifier) => Cell[]
-  searchMoveable(side) {
-    const player = this[side];
-    const { pos } = player;
-
-    if (pos === null) return player.portalAdjacentCells;
-
-    const result = [];
-
-    this.cells.forEach((row) => row.forEach((cell) => {
-      if (pos[0] % 2 === 0) {
-        if (
-          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-        ) {
-          result.push(cell);
-        }
-      } else {
-        if (
-          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] + 1)
-        ) {
-          result.push(cell);
-        }
-      }
-    }));
-
-    result.sort((a, b) => {
-      const orders = [0, 0];
-
-      [a, b].forEach((cell, index) => {
-        const diffY = this.currentPlayer.pos[0] - cell.pos[0];
-        const diffX = this.currentPlayer.pos[1] - cell.pos[1];
-
-        if (cell.pos[0] % 2 === 0) {
-          if (diffY === -1 && diffX === 0) {
-            orders[index] = 0;
-          } else if (diffY === 0 && diffX === 1) {
-            orders[index] = 1;
-          } else if (diffY === 1 && diffX === 0) {
-            orders[index] = 2;
-          } else if (diffY === 1 && diffX === -1) {
-            orders[index] = 3;
-          } else if (diffY === 0 && diffX === -1) {
-            orders[index] = 4;
-          } else if (diffY === -1 && diffX === -1) {
-            orders[index] = 5;
-          }
-        } else {
-          if (diffY === -1 && diffX === 1) {
-            orders[index] = 0;
-          } else if (diffY === 0 && diffX === 1) {
-            orders[index] = 1;
-          } else if (diffY === 1 && diffX === 1) {
-            orders[index] = 2;
-          } else if (diffY === 1 && diffX === 0) {
-            orders[index] = 3;
-          } else if (diffY === 0 && diffX === -1) {
-            orders[index] = 4;
-          } else if (diffY === -1 && diffX === 0) {
-            orders[index] = 5;
-          }
-        }
-      });
-
-      return orders[0] - orders[1];
-    });
-
-    return result;
-  }
-
-  // (side?: PlayerIdentifier) => void
-  turn(side = this.currentSide) {
-    this.currentSide = side;
-    this.selectingId = 0;
-    this.cells.forEach((row) => row.forEach((cell) => {
-      cell.isMoveable = false;
-      cell.isSelecting = false;
-    }));
-    this.searchMoveable(side).forEach((cell) => {
-      cell.isMoveable = true;
-    });
-    this.searchMoveable(side)[this.selectingId].isSelecting = true;
   }
 }
 
