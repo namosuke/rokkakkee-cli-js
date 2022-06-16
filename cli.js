@@ -257,23 +257,11 @@ class Game {
       const movableCells = this.searchMovable();
 
       if (key.name === "left" || key.name === "right") {
-        if (key.name === "left") {
-          if (this.selectingId - 1 < 0) {
-            this.selectingId = movableCells.length - 1;
-          } else {
-            this.selectingId--;
-          }
-        } else if (key.name === "right") {
-          if (this.selectingId + 1 >= movableCells.length) {
-            this.selectingId = 0;
-          } else {
-            this.selectingId++;
-          }
-        }
+        movableCells[this.selectingId].isSelecting = false;
 
-        this.cells.forEach((row) => row.forEach((cell) => {
-          cell.isSelecting = false;
-        }));
+        const offset = key.name === "left" ? -1 : 1;
+        this.selectingId += offset + movableCells.length;
+        this.selectingId %= movableCells.length;
 
         movableCells[this.selectingId].isSelecting = true;
       }
