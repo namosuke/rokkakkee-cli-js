@@ -194,76 +194,18 @@ class Game {
 
   // (player: Player) => Cell[]
   searchMovable(player = this.currentPlayer) {
-    const { pos } = player;
+    if (player.pos === null) return player.portalAdjacentCells;
 
-    if (pos === null) return player.portalAdjacentCells;
+    const [row, col] = player.pos;
 
-    const result = [];
-
-    this.cells.forEach((row) => row.forEach((cell) => {
-      if (pos[0] % 2 === 0) {
-        if (
-          (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-        ) {
-          result.push(cell);
-        }
-      } else if (
-        (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] - 1 && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] - 1)
-          || (cell.pos[0] === pos[0] && cell.pos[1] === pos[1] + 1)
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1])
-          || (cell.pos[0] === pos[0] + 1 && cell.pos[1] === pos[1] + 1)
-      ) {
-        result.push(cell);
-      }
-    }));
-
-    result.sort((a, b) => {
-      const orders = [0, 0];
-
-      [a, b].forEach((cell, index) => {
-        const diffY = this.currentPlayer.pos[0] - cell.pos[0];
-        const diffX = this.currentPlayer.pos[1] - cell.pos[1];
-
-        if (cell.pos[0] % 2 === 0) {
-          if (diffY === -1 && diffX === 0) {
-            orders[index] = 0;
-          } else if (diffY === 0 && diffX === 1) {
-            orders[index] = 1;
-          } else if (diffY === 1 && diffX === 0) {
-            orders[index] = 2;
-          } else if (diffY === 1 && diffX === -1) {
-            orders[index] = 3;
-          } else if (diffY === 0 && diffX === -1) {
-            orders[index] = 4;
-          } else if (diffY === -1 && diffX === -1) {
-            orders[index] = 5;
-          }
-        } else if (diffY === -1 && diffX === 1) {
-          orders[index] = 0;
-        } else if (diffY === 0 && diffX === 1) {
-          orders[index] = 1;
-        } else if (diffY === 1 && diffX === 1) {
-          orders[index] = 2;
-        } else if (diffY === 1 && diffX === 0) {
-          orders[index] = 3;
-        } else if (diffY === 0 && diffX === -1) {
-          orders[index] = 4;
-        } else if (diffY === -1 && diffX === 0) {
-          orders[index] = 5;
-        }
-      });
-
-      return orders[0] - orders[1];
-    });
-
-    return result;
+    return [
+      this.cells[row + 1]?.[col + (row % 2 ? 0 : -1)], // 左下
+      this.cells[row]?.[col - 1], // 左
+      this.cells[row - 1]?.[col + (row % 2 ? 0 : -1)], // 左上
+      this.cells[row - 1]?.[col + (row % 2 ? 1 : 0)], // 右上
+      this.cells[row]?.[col + 1], // 右
+      this.cells[row + 1]?.[col + (row % 2 ? 1 : 0)], // 右下
+    ].filter(Boolean);
   }
 
   turn() {
