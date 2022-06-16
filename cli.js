@@ -5,7 +5,7 @@
 
 const readline = require("readline");
 
-// これが無いとCtrl+Cで終了できない
+// 標準入力と標準出力を制御する
 readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -179,12 +179,11 @@ class Game {
   }
 
   start() {
+    // カーソルを隠す
     // https://note.affi-sapo-sv.com/nodejs-console-cursor-onoff.php
     console.log("\x1b[?25l");
     process.on("exit", () => process.stdout.write("\x1b[?25h"));
-    process.on("SIGINT", () => process.exit(0));
-    readline.emitKeypressEvents(process.stdin);
-    process.stdin.setRawMode(true);
+
     process.stdin.on("keypress", (_str, key) => {
       if (this.isGameOver) return;
 
