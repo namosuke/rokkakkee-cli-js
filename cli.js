@@ -33,7 +33,7 @@ class Player {
   // readonly turnMessage: string;
   // readonly winningMessage: string;
   // readonly portalAdjacentCells: [Cell, Cell];
-  // pos: null | Position;
+  // currentCell: Cell;
 
   constructor({
     game,
@@ -50,7 +50,7 @@ class Player {
     this.turnMessage = `${color(alias)}のターンです`;
     this.winningMessage = `${color(alias)}の勝ち！`;
     this.portalAdjacentCells = portalAdjacentCells;
-    this.pos = null;
+    this.currentCell = null;
   }
 
   // () => number;
@@ -65,7 +65,7 @@ class Player {
   }
 
   get portal() {
-    const onPortal = this.pos === null;
+    const onPortal = this.currentCell === null;
     const portal = onPortal ? this.toString() : this.color("---");
 
     return `${thin("(")}${portal}${thin(")")}`;
@@ -84,47 +84,50 @@ class Player {
 // (
 //   game: Game,
 //   pos: Position,
-//   num?: number,
+//   def?: number,
 //   player?: Player,
 // ) => Cell
 class Cell {
   // readonly game: Game;
   // readonly pos: Position;
-  // num: number;
+  // def: number;
   // player: Player;
   // isMovable: boolean;
   // isSelecting: boolean;
-  // isPlayer: boolean;
+  // playerOnCell: boolean;
 
-  constructor(game, pos, num, player) {
+  constructor(game, pos, def, player) {
     this.game = game;
     this.pos = pos;
-    this.num = num ?? 0;
+    this.def = def ?? 0;
     this.player = player ?? null;
     this.isMovable = false;
     this.isSelecting = false;
-    this.isPlayer = false;
+    this.playerOnCell = false;
   }
 
   // () => string
   toString() {
     // マスの値を何桁で表示するかを指定する
     const digitDisplayed = 1;
-    const formattedCellNumber = String(this.num).padStart(digitDisplayed, "0");
-    const num = ` ${formattedCellNumber} `;
+    const formattedCellNumber = String(this.def).padStart(digitDisplayed, "0");
+    const def = ` ${formattedCellNumber} `;
 
-    let result = this.player?.color(num) ?? num;
+    let cellString = this.playerOnCell ? this.player.toString() : def;
 
-    if (this.isPlayer && this.player) {
-      result = this.player.toString();
+    if (this.player !== null) {
+      cellString = this.player.color(cellString);
     }
+
     if (this.isMovable) {
-      result = underline(result);
+      cellString = underline(cellString);
     }
+
     if (this.isSelecting) {
-      result = swap(result);
+      cellString = swap(cellString);
     }
-    return result;
+
+    return cellString;
   }
 }
 
@@ -133,7 +136,7 @@ class Game {
   // readonly playerA: Player;
   // readonly playerB: Player;
   // currentPlayer: Player;
-  // selectingId: number;
+  // selectedIdx: number;
 
   constructor() {
     this.cells = [
@@ -175,7 +178,7 @@ class Game {
     });
 
     this.currentPlayer = this.playerB;
-    this.selectingId = 0;
+    this.selectedIdx = 0;
   }
 
   get nextPlayer() {
@@ -194,9 +197,9 @@ class Game {
 
   // (player: Player) => Cell[]
   searchMovable(player = this.currentPlayer) {
-    if (player.pos === null) return player.portalAdjacentCells;
+    if (player.currentCell !== null) return player.portalAdjacentCells;
 
-    const [row, col] = player.pos;
+    const [row, col] = player.currentCell.pos;
 
     return [
       this.cells[row + 1]?.[col + (row % 2 ? 0 : -1)], // 左下
@@ -210,7 +213,7 @@ class Game {
 
   turn() {
     this.currentPlayer = this.nextPlayer;
-    this.selectingId = 0;
+    this.selectedIdx = 0;
 
     this.cells.forEach((row) => row.forEach((cell) => {
       cell.isMovable = false;
@@ -219,7 +222,7 @@ class Game {
 
     const movableCells = this.searchMovable();
     movableCells.forEach((cell) => { cell.isMovable = true; });
-    movableCells[this.selectingId].isSelecting = true;
+    movableCells[this.selectedIdx].isSelecting = true;
   }
 
   draw() {
@@ -257,44 +260,66 @@ class Game {
       const movableCells = this.searchMovable();
 
       if (key.name === "left" || key.name === "right") {
-        movableCells[this.selectingId].isSelecting = false;
+        movableCells[this.selectedIdx].isSelecting = false;
 
         const offset = key.name === "left" ? -1 : 1;
-        this.selectingId += offset + movableCells.length;
-        this.selectingId %= movableCells.length;
+        this.selectedIdx += offset + movableCells.length;
+        this.selectedIdx %= movableCells.length;
 
-        movableCells[this.selectingId].isSelecting = true;
+        movableCells[this.selectedIdx].isSelecting = true;
       }
 
       if (key.name === "up") {
-        const selectingCell = movableCells[this.selectingId];
+        // (cell: Cell) => void
+        const leave = (cell) => {
+          cell.playerOnCell = false;
+        };
 
-        // 移動先が敵陣かつプレイヤーでないとき
-        if (selectingCell.player === this.nextPlayer
-        && selectingCell.pos !== this.nextPlayer.pos) {
-          selectingCell.num -= 1;
+        // (cell: Cell) => void
+        const enter = (cell) => {
+          this.currentPlayer.currentCell = cell;
+          cell.playerOnCell = true;
+        };
 
-          if (selectingCell.num === 0) {
-            selectingCell.player = null;
-          }
-        } else {
-          // もし敵プレイヤーなら
-          if (selectingCell.pos === this.nextPlayer.pos) {
-            this.nextPlayer.pos = null;
-            selectingCell.num = 0;
-          }
+        // (originCell: null | Cell, targetCell: Cell) => void
+        const move = (originCell, targetCell) => {
+          if (originCell === targetCell) throw Error("同じセルに移動できない。");
+          if (originCell !== null) leave(originCell);
+          enter(targetCell);
+        };
 
-          selectingCell.player = this.currentPlayer;
+        // (player: Player) => void
+        const defeat = (player) => {
+          player.currentCell = null;
+        };
 
-          // 移動時にisPlayerをリセット
-          if (this.currentPlayer.pos) {
-            const { pos: [row, col] } = this.currentPlayer;
-            this.cells[row][col].isPlayer = false;
-            this.cells[row][col].num += 1;
-          }
+        // (cell: Cell, player: null | Player)
+        const changeOwner = (cell, player) => {
+          cell.player = player;
+        };
 
-          selectingCell.isPlayer = true;
-          this.currentPlayer.pos = selectingCell.pos;
+        const selectedCell = movableCells[this.selectedIdx];
+        const { currentCell } = this.currentPlayer;
+
+        if (selectedCell.player === null) { // 中立セル
+          move(currentCell, selectedCell);
+          changeOwner(selectedCell, this.currentPlayer);
+
+          selectedCell.def = 1;
+        } else if (selectedCell.player === this.currentPlayer) { // 自陣セル
+          move(currentCell, selectedCell);
+
+          selectedCell.def += 1;
+        } else if (selectedCell.playerOnCell) { // 敵陣セルかつ敵がいる
+          move(currentCell, selectedCell);
+          defeat(selectedCell.player);
+          changeOwner(selectedCell, this.currentPlayer);
+
+          selectedCell.def = 1;
+        } else { // 敵陣セルかつ敵がいない
+          selectedCell.def -= 1;
+
+          if (selectedCell.def === 0) selectedCell.player = null;
         }
 
         this.turn();
