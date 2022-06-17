@@ -202,6 +202,7 @@ class Game {
   // private readonly #players: Player[];
   // private #currentPlayer: Player;
   // private #selectedIdx: number;
+  // private #movableCells: Cell[];
 
   #cells;
 
@@ -210,6 +211,8 @@ class Game {
   #currentPlayer;
 
   #selectedIdx;
+
+  #movableCells;
 
   constructor() {
     this.#cells = [
@@ -251,15 +254,27 @@ class Game {
     this.#players = [playerA, playerB];
     this.#currentPlayer = this.#players.at(-1);
     this.#selectedIdx = 0;
+    this.#movableCells = [];
+  }
+
+  get selectedIdx() {
+    return this.#selectedIdx;
+  }
+
+  // set selectedIdx(num: number)
+  set selectedIdx(num) {
+    this.selectedCell.isSelecting = false;
+    this.#selectedIdx = (num + this.#movableCells.length) % this.#movableCells.length;
+    this.selectedCell.isSelecting = true;
+  }
+
+  // get selectedCell(): Cell
+  get selectedCell() {
+    return this.#movableCells[this.#selectedIdx];
   }
 
   get cells() {
     return this.#cells;
-  }
-
-  // get currentPlayer(): Player
-  get currentPlayer() {
-    return this.#currentPlayer;
   }
 
   // get nextPlayer(): Player
@@ -299,18 +314,20 @@ class Game {
     ].filter(Boolean);
   }
 
-  turn() {
-    this.#currentPlayer = this.nextPlayer;
-    this.#selectedIdx = 0;
-
-    this.#cells.forEach((row) => row.forEach((cell) => {
+  nextTurn() {
+    this.#movableCells.forEach((cell) => {
       cell.isMovable = false;
       cell.isSelecting = false;
-    }));
+    });
 
-    const movableCells = this.searchMovable();
-    movableCells.forEach((cell) => { cell.isMovable = true; });
-    movableCells[this.#selectedIdx].isSelecting = true;
+    if (this.isGameOver) return;
+
+    this.#currentPlayer = this.nextPlayer;
+    // Can not change to this.selectedIdx
+    this.#selectedIdx = 0;
+    this.#movableCells = this.searchMovable();
+    this.#movableCells.forEach((cell) => { cell.isMovable = true; });
+    this.selectedCell.isSelecting = true;
   }
 
   draw() {
@@ -342,58 +359,50 @@ class Game {
     console.log("\x1b[?25l");
     process.on("exit", () => process.stdout.write("\x1b[?25h"));
 
+    // 移動先のセルを選択
     process.stdin.on("keypress", (_str, key) => {
-      if (this.isGameOver) return;
+      if (key.name === "left") this.selectedIdx -= 1;
+      if (key.name === "right") this.selectedIdx += 1;
+    });
 
-      const movableCells = this.searchMovable();
-
-      if (key.name === "left" || key.name === "right") {
-        movableCells[this.#selectedIdx].isSelecting = false;
-
-        const offset = key.name === "left" ? -1 : 1;
-        this.#selectedIdx += offset + movableCells.length;
-        this.#selectedIdx %= movableCells.length;
-
-        movableCells[this.#selectedIdx].isSelecting = true;
-      }
-
+    // セルへ移動
+    process.stdin.on("keypress", (_str, key) => {
       if (key.name === "up") {
-        const selectedCell = movableCells[this.#selectedIdx];
+        if (this.selectedCell.owner === null) {
+          // 中立セル
+          this.#currentPlayer.moveTo(this.selectedCell);
+          this.selectedCell.changeOwner(this.#currentPlayer);
+          this.selectedCell.def = 1;
+        } else if (this.selectedCell.owner === this.#currentPlayer) {
+          // 自陣セル
+          this.#currentPlayer.moveTo(this.selectedCell);
+          this.selectedCell.def += 1;
+        } else if (this.selectedCell.playerOnCell) {
+          // 敵陣セルかつ敵がいる
+          this.#currentPlayer.moveTo(this.selectedCell);
+          this.selectedCell.owner.respawn();
+          this.selectedCell.changeOwner(this.#currentPlayer);
+          this.selectedCell.def = 1;
+        } else {
+          // 敵陣セルかつ敵がいない
+          this.selectedCell.def -= 1;
 
-        if (selectedCell.owner === null) { // 中立セル
-          this.#currentPlayer.moveTo(selectedCell);
-          selectedCell.changeOwner(this.#currentPlayer);
-          selectedCell.def = 1;
-        } else if (selectedCell.owner === this.#currentPlayer) { // 自陣セル
-          this.#currentPlayer.moveTo(selectedCell);
-          selectedCell.def += 1;
-        } else if (selectedCell.playerOnCell) { // 敵陣セルかつ敵がいる
-          this.#currentPlayer.moveTo(selectedCell);
-          selectedCell.owner.respawn();
-          selectedCell.changeOwner(this.#currentPlayer);
-          selectedCell.def = 1;
-        } else { // 敵陣セルかつ敵がいない
-          selectedCell.def -= 1;
-
-          if (selectedCell.def === 0) {
-            selectedCell.changeOwner(null);
+          if (this.selectedCell.def === 0) {
+            this.selectedCell.changeOwner(null);
           }
         }
 
-        this.turn();
+        this.nextTurn();
       }
-
-      if (this.isGameOver) {
-        this.#cells.forEach((row) => row.forEach((cell) => {
-          cell.isMovable = false;
-          cell.isSelecting = false;
-        }));
-      }
-
-      this.draw();
     });
 
-    this.turn();
+    // 描画
+    process.stdin.on("keypress", () => this.draw());
+
+    // ゲームオーバー処理
+    process.stdin.on("keypress", () => { if (this.isGameOver) process.exit(); });
+
+    this.nextTurn();
     this.draw();
   }
 }
