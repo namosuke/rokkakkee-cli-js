@@ -35,14 +35,7 @@ class Player {
   // readonly portalAdjacentCells: [Cell, Cell];
   // pos: null | Position;
 
-  constructor({
-    game,
-    id,
-    color,
-    displayedName,
-    alias,
-    portalAdjacentCells,
-  }) {
+  constructor({ game, id, color, displayedName, alias, portalAdjacentCells }) {
     this.game = game;
     this.id = id;
     this.color = color;
@@ -55,9 +48,9 @@ class Player {
 
   // () => number;
   get point() {
-    return this.game.cells.flat().reduce((sum, cell) => (
-      cell.player === this ? sum + 1 : sum
-    ), 0);
+    return this.game.cells
+      .flat()
+      .reduce((sum, cell) => (cell.player === this ? sum + 1 : sum), 0);
   }
 
   get pointMessage() {
@@ -143,11 +136,7 @@ class Game {
         new Cell(this, [0, 2]),
         new Cell(this, [0, 3]),
       ],
-      [
-        new Cell(this, [1, 0]),
-        new Cell(this, [1, 1]),
-        new Cell(this, [1, 2]),
-      ],
+      [new Cell(this, [1, 0]), new Cell(this, [1, 1]), new Cell(this, [1, 2])],
       [
         new Cell(this, [2, 0]),
         new Cell(this, [2, 1]),
@@ -183,7 +172,9 @@ class Game {
   }
 
   get winner() {
-    return this.playerA.point > this.playerB.point ? this.playerA : this.playerB;
+    return this.playerA.point > this.playerB.point
+      ? this.playerA
+      : this.playerB;
   }
 
   get isGameOver() {
@@ -212,13 +203,17 @@ class Game {
     this.currentPlayer = this.nextPlayer;
     this.selectingId = 0;
 
-    this.cells.forEach((row) => row.forEach((cell) => {
-      cell.isMovable = false;
-      cell.isSelecting = false;
-    }));
+    this.cells.forEach((row) =>
+      row.forEach((cell) => {
+        cell.isMovable = false;
+        cell.isSelecting = false;
+      })
+    );
 
     const movableCells = this.searchMovable();
-    movableCells.forEach((cell) => { cell.isMovable = true; });
+    movableCells.forEach((cell) => {
+      cell.isMovable = true;
+    });
     movableCells[this.selectingId].isSelecting = true;
   }
 
@@ -226,14 +221,18 @@ class Game {
     const points = `${this.playerA.pointMessage} / ${this.playerB.pointMessage}`;
     const portalB = " ".repeat(6) + this.playerB.portal;
     const portalA = " ".repeat(6) + this.playerA.portal;
-    const cells = this.cells.map((row, rowIndex) => {
-      const paddingSpacesAtBeginning = " ".repeat(rowIndex % 2 ? 2 : 0);
-      const cellRow = row.map((cell) => cell.toString());
-      const rowText = ["", ...cellRow, ""].join(thin("|")); // 前後に "|" をつける
+    const cells = this.cells
+      .map((row, rowIndex) => {
+        const paddingSpacesAtBeginning = " ".repeat(rowIndex % 2 ? 2 : 0);
+        const cellRow = row.map((cell) => cell.toString());
+        const rowText = ["", ...cellRow, ""].join(thin("|")); // 前後に "|" をつける
 
-      return paddingSpacesAtBeginning + rowText;
-    }).join("\n");
-    const info = this.isGameOver ? this.winner.winningMessage : this.currentPlayer.turnMessage;
+        return paddingSpacesAtBeginning + rowText;
+      })
+      .join("\n");
+    const info = this.isGameOver
+      ? this.winner.winningMessage
+      : this.currentPlayer.turnMessage;
 
     console.clear();
     console.log(points);
@@ -271,9 +270,11 @@ class Game {
           }
         }
 
-        this.cells.forEach((row) => row.forEach((cell) => {
-          cell.isSelecting = false;
-        }));
+        this.cells.forEach((row) =>
+          row.forEach((cell) => {
+            cell.isSelecting = false;
+          })
+        );
 
         movableCells[this.selectingId].isSelecting = true;
       }
@@ -282,8 +283,10 @@ class Game {
         const selectingCell = movableCells[this.selectingId];
 
         // 移動先が敵陣かつプレイヤーでないとき
-        if (selectingCell.player === this.nextPlayer
-        && selectingCell.pos !== this.nextPlayer.pos) {
+        if (
+          selectingCell.player === this.nextPlayer &&
+          selectingCell.pos !== this.nextPlayer.pos
+        ) {
           selectingCell.num -= 1;
 
           if (selectingCell.num === 0) {
@@ -300,7 +303,9 @@ class Game {
 
           // 移動時にisPlayerをリセット
           if (this.currentPlayer.pos) {
-            const { pos: [row, col] } = this.currentPlayer;
+            const {
+              pos: [row, col],
+            } = this.currentPlayer;
             this.cells[row][col].isPlayer = false;
             this.cells[row][col].num += 1;
           }
@@ -313,10 +318,12 @@ class Game {
       }
 
       if (this.isGameOver) {
-        this.cells.forEach((row) => row.forEach((cell) => {
-          cell.isMovable = false;
-          cell.isSelecting = false;
-        }));
+        this.cells.forEach((row) =>
+          row.forEach((cell) => {
+            cell.isMovable = false;
+            cell.isSelecting = false;
+          })
+        );
       }
 
       this.draw();

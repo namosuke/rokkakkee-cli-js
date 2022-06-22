@@ -1,0 +1,17 @@
+{
+  "name": "rokkakkee-cli",
+  "version": "0.0.1",
+  "description": "A game named 'rokkakkee' for command line interfaces",
+  "main": "cli.js",
+  "repository": "https://github.com/namosuke/rokkakkee-cli.git",
+  "author": "namosuke",
+  "license": "",
+  "dependencies": {
+    "commander": "^9.3.0",
+    "ts-node": "^10.8.1",
+    "typescript": "^4.7.3"
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.41"
+  }
+}
