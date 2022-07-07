@@ -37,13 +37,7 @@ class Player {
 
   #portalAdjacentCells;
 
-  constructor({
-    game,
-    displayedName,
-    alias,
-    portalAdjacentCells,
-    color,
-  }) {
+  constructor({ game, displayedName, alias, portalAdjacentCells, color }) {
     this.#game = game;
     this.#displayedName = displayedName;
     this.#alias = alias;
@@ -200,7 +194,7 @@ class Cell {
 class Game {
   // private readonly #cells: Cell[][];
   // private readonly #players: Player[];
-  // private #currentPlayer: Player;
+  // currentPlayer: Player;
   // private #selectedIdx: number;
   // private #movableCells: Cell[];
 
@@ -208,31 +202,15 @@ class Game {
 
   #players;
 
-  #currentPlayer;
-
   #selectedIdx;
 
   #movableCells;
 
   constructor() {
     this.#cells = [
-      [
-        new Cell([0, 0]),
-        new Cell([0, 1]),
-        new Cell([0, 2]),
-        new Cell([0, 3]),
-      ],
-      [
-        new Cell([1, 0]),
-        new Cell([1, 1]),
-        new Cell([1, 2]),
-      ],
-      [
-        new Cell([2, 0]),
-        new Cell([2, 1]),
-        new Cell([2, 2]),
-        new Cell([2, 3]),
-      ],
+      [new Cell([0, 0]), new Cell([0, 1]), new Cell([0, 2]), new Cell([0, 3])],
+      [new Cell([1, 0]), new Cell([1, 1]), new Cell([1, 2])],
+      [new Cell([2, 0]), new Cell([2, 1]), new Cell([2, 2]), new Cell([2, 3])],
     ];
 
     const playerA = new Player({
@@ -252,7 +230,7 @@ class Game {
     });
 
     this.#players = [playerA, playerB];
-    this.#currentPlayer = this.#players.at(-1);
+    this.currentPlayer = this.#players.at(-1);
     this.#selectedIdx = 0;
     this.#movableCells = [];
   }
@@ -264,7 +242,8 @@ class Game {
   // set selectedIdx(num: number)
   set selectedIdx(num) {
     this.selectedCell.isSelecting = false;
-    this.#selectedIdx = (num + this.#movableCells.length) % this.#movableCells.length;
+    this.#selectedIdx =
+      (num + this.#movableCells.length) % this.#movableCells.length;
     this.selectedCell.isSelecting = true;
   }
 
@@ -279,7 +258,9 @@ class Game {
 
   // get nextPlayer(): Player
   get nextPlayer() {
-    let playerIdx = this.#players.findIndex((player) => player === this.#currentPlayer);
+    let playerIdx = this.#players.findIndex(
+      (player) => player === this.currentPlayer
+    );
     playerIdx += 1;
     playerIdx %= this.#players.length;
 
@@ -295,11 +276,13 @@ class Game {
   }
 
   get isGameOver() {
-    return this.#cells.flat().filter((cell) => cell.owner === null).length === 0;
+    return (
+      this.#cells.flat().filter((cell) => cell.owner === null).length === 0
+    );
   }
 
   // (player: Player) => Cell[]
-  searchMovable(player = this.#currentPlayer) {
+  searchMovable(player = this.currentPlayer) {
     if (player.currentCell === null) return player.portalAdjacentCells;
 
     const [row, col] = player.currentCell.pos;
@@ -322,26 +305,34 @@ class Game {
 
     if (this.isGameOver) return;
 
-    this.#currentPlayer = this.nextPlayer;
+    this.currentPlayer = this.nextPlayer;
     // Can not change to this.selectedIdx
     this.#selectedIdx = 0;
     this.#movableCells = this.searchMovable();
-    this.#movableCells.forEach((cell) => { cell.isMovable = true; });
+    this.#movableCells.forEach((cell) => {
+      cell.isMovable = true;
+    });
     this.selectedCell.isSelecting = true;
   }
 
   draw() {
-    const points = this.#players.map((player) => player.pointMessage).join(" / ");
+    const points = this.#players
+      .map((player) => player.pointMessage)
+      .join(" / ");
     const portalB = " ".repeat(6) + this.#players[1].portal;
     const portalA = " ".repeat(6) + this.#players[0].portal;
-    const cells = this.#cells.map((row, rowIndex) => {
-      const paddingSpacesAtBeginning = " ".repeat(rowIndex % 2 ? 2 : 0);
-      const cellRow = row.map((cell) => cell.toString());
-      const rowText = ["", ...cellRow, ""].join(thin("|")); // 前後に "|" をつける
+    const cells = this.#cells
+      .map((row, rowIndex) => {
+        const paddingSpacesAtBeginning = " ".repeat(rowIndex % 2 ? 2 : 0);
+        const cellRow = row.map((cell) => cell.toString());
+        const rowText = ["", ...cellRow, ""].join(thin("|")); // 前後に "|" をつける
 
-      return paddingSpacesAtBeginning + rowText;
-    }).join("\n");
-    const info = this.isGameOver ? this.winner.winningMessage : this.#currentPlayer.turnMessage;
+        return paddingSpacesAtBeginning + rowText;
+      })
+      .join("\n");
+    const info = this.isGameOver
+      ? this.winner.winningMessage
+      : this.currentPlayer.turnMessage;
 
     console.clear();
     console.log(points);
@@ -370,18 +361,18 @@ class Game {
       if (key.name === "up") {
         if (this.selectedCell.owner === null) {
           // 中立セル
-          this.#currentPlayer.moveTo(this.selectedCell);
-          this.selectedCell.changeOwner(this.#currentPlayer);
+          this.currentPlayer.moveTo(this.selectedCell);
+          this.selectedCell.changeOwner(this.currentPlayer);
           this.selectedCell.def = 1;
-        } else if (this.selectedCell.owner === this.#currentPlayer) {
+        } else if (this.selectedCell.owner === this.currentPlayer) {
           // 自陣セル
-          this.#currentPlayer.moveTo(this.selectedCell);
+          this.currentPlayer.moveTo(this.selectedCell);
           this.selectedCell.def += 1;
         } else if (this.selectedCell.playerOnCell) {
           // 敵陣セルかつ敵がいる
-          this.#currentPlayer.moveTo(this.selectedCell);
+          this.currentPlayer.moveTo(this.selectedCell);
           this.selectedCell.owner.respawn();
-          this.selectedCell.changeOwner(this.#currentPlayer);
+          this.selectedCell.changeOwner(this.currentPlayer);
           this.selectedCell.def = 1;
         } else {
           // 敵陣セルかつ敵がいない
@@ -400,7 +391,9 @@ class Game {
     process.stdin.on("keypress", () => this.draw());
 
     // ゲームオーバー処理
-    process.stdin.on("keypress", () => { if (this.isGameOver) process.exit(); });
+    process.stdin.on("keypress", () => {
+      if (this.isGameOver) process.exit();
+    });
 
     this.nextTurn();
     this.draw();
